@@ -1,0 +1,69 @@
+{
+  "mcpServers": {
+    "pixellab": {
+      "command": "node",
+      "args": ["/Users/trislit/Documents/GitHub/BNBBallonpump/mcp/cursor-client.js", "pixellab"],
+      "env": {
+        "MCP_SERVER_URL": "https://api.pixellab.ai/mcp",
+        "MCP_HEADERS": "{\"Authorization\":\"Bearer bf6aaa88-123d-42c5-9f8e-1b409d514b8c\"}",
+        "MCP_TRANSPORT": "http"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/trislit/Documents/GitHub/BNBBallonpump"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your-github-token-if-you-have-one"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "playwright-mcp"]
+    },
+    "tatumio": {
+      "command": "node",
+      "args": ["/Users/trislit/Documents/GitHub/BNBBallonpump/mcp/cursor-client.js", "tatumio"],
+      "env": {
+        "TATUM_API_KEY": "t-68ace357796ef2921a09788e-a0929c1a43484924a195db6f"
+      }
+    },
+    "hf-mcp-server": {
+      "command": "node",
+      "args": ["/Users/trislit/Documents/GitHub/BNBBallonpump/mcp/cursor-client.js", "hf-mcp-server"],
+      "env": {
+        "MCP_SERVER_URL": "https://huggingface.co/mcp",
+        "MCP_HEADERS": "{\"Authorization\":\"Bearer YOUR_HUGGINGFACE_API_KEY\"}",
+        "MCP_TRANSPORT": "http"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=jmvqvprfdwaczsysosybj"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_71fdd6fed5f449e7b85384cc7fde2b782e84b350"
+      }
+    },
+    "augments": {
+      "command": "npx",
+      "args": ["-y", "@augmnt/mcp-server"]
+    },
+    "shrimp": {
+      "command": "npx",
+      "args": ["-y", "@shrimp-ai/task-manager-mcp"]
+    }
+  }
+}
+
+

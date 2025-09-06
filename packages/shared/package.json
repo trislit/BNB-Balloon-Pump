@@ -1,0 +1,20 @@
+{
+  "name": "@balloonpump/shared",
+  "version": "0.1.0",
+  "description": "Shared types, schemas, and configurations for Balloon Pump Game",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.4",
+    "viem": "^1.19.15"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.5"
+  }
+}
