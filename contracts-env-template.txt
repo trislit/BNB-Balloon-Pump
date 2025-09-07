@@ -1,0 +1,18 @@
+# =============================================
+# Smart Contract Deployment Configuration
+# =============================================
+# Save this as: packages/contracts/.env
+
+# 🔑 PRIVATE KEY FOR DEPLOYMENT (YOU NEED TO FILL THIS IN)
+# Same as your relayer private key or a separate deployment wallet
+PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000
+
+# BNB Smart Chain Testnet
+BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545/
+
+# BscScan API Key (optional, for contract verification)
+# Get from: https://bscscan.com/apis
+BSCSCAN_API_KEY=your-bscscan-api-key
+
+# Tatum.io Configuration (optional)
+TATUM_API_KEY=your-tatum-api-key
