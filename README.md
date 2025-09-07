@@ -1,491 +1,137 @@
-# 🎈 BNB Balloon Pump Game - Full Technical Implementation
+# 🎈 BNB Balloon Pump Game - Hybrid Architecture
 
-A sophisticated blockchain-based balloon pumping game on BNB Chain with AI-powered features, gasless transactions via relayer, and real-time indexing.
+A sophisticated balloon pumping game with **hybrid architecture** combining instant Supabase updates with BNB Smart Chain finality.
 
 ## 🌟 Features
 
-- **🎮 Gasless Gaming**: Pump balloons without paying gas fees
-- **⛓️ BNB Smart Chain**: Full EVM compatibility with BNB Chain
-- **🤖 AI Integration**: Multiple MCP servers for enhanced gameplay
-- **🎨 Dynamic Visuals**: Real-time balloon animations and effects
-- **📊 Real-time Leaderboard**: Live player rankings and statistics
-- **🔗 Multi-Service Architecture**: Relayer, Indexer, and Frontend services
-- **💰 Token Rewards**: Earn BPM tokens on BNB Chain
-- **🎯 Risk Management**: Strategic gameplay with balloon popping mechanics
-- **🔐 Secure Authentication**: SIWE (Sign-In with Ethereum) integration
+- ⚡ **Instant UI Updates** - No waiting for blockchain confirmations
+- ⛓️ **Blockchain Security** - All transactions confirmed on BNB Chain  
+- 🔄 **Real-time Sync** - Multi-user game state synchronization
+- 🎮 **Gasless Gaming** - Users don't pay gas fees
+- 🔐 **MetaMask Auth** - Sign-In With Ethereum (SIWE)
+- 📊 **Live Leaderboard** - Real-time rankings and statistics
 
-## 🏗️ Architecture Overview
+## 🏗️ Architecture
 
-### **Hybrid Architecture: On-Chain + Off-Chain**
+### Hybrid Flow
+1. **User Action** → Frontend sends to Relayer
+2. **Instant Update** → Supabase updates immediately (optimistic)
+3. **UI Response** → User sees changes instantly
+4. **Blockchain** → Transaction submitted to BNB Chain (async)
+5. **Confirmation** → Indexer syncs blockchain state back to Supabase
 
-#### **On-Chain (BNB Smart Chain):**
-- ✅ Game results and outcomes
-- ✅ Token balances and transfers
-- ✅ Reward distributions
-- ✅ Core game logic and rules
-- ✅ Audit trail of all game actions
-
-#### **Off-Chain (Database + Services):**
-- 🔄 User session management with Supabase
-- 🔄 Game state caching (5-minute TTL)
-- 🔄 Analytics and statistics
-- 🔄 Real-time subscriptions for live updates
-- 🔄 Row Level Security (RLS) for data protection
-
-#### **Services Architecture:**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Relayer      │    │    Indexer      │
-│   (Next.js)     │◄──►│  (Gasless TX)   │    │  (Event Sync)   │
-│                 │    │                 │    │                 │
+│   (Next.js)     │◄──►│  (Optimistic)   │    │  (Event Sync)   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  │
                     ┌─────────────────┐
                     │  Smart Contract │
-                    │  (BalloonPump)  │
+                    │  (BNB Chain)    │
                     └─────────────────┘
                                  │
                     ┌─────────────────┐
                     │   Supabase DB   │
-                    │   (Cache/Auth)  │
+                    │ (Optimistic +   │
+                    │  Confirmed)     │
                     └─────────────────┘
 ```
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js 18+**
-- **Supabase Account** (free tier available)
-- **MetaMask** or compatible Web3 wallet
-- **BNB Chain testnet BNB** for gas fees
-
-### 1. Environment Setup
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd BNB-BalloonPump
-
-# Install dependencies for all packages
-npm install
-```
-
-### 2. Supabase Setup
-
-1. Go to [Supabase](https://supabase.com) and create a free account
-2. Create a new project
-3. Go to Settings → API to get your credentials
-4. Run the SQL setup script:
-
-```bash
-# Run this in Supabase SQL Editor
-cat infra/supabase/schema.sql | psql
-```
-
-### 3. Environment Configuration
-
-Copy and configure environment files:
-
-```bash
-# Root .env
-cp .env.example .env
-
-# Frontend environment
-cp apps/web/.env.example apps/web/.env
-
-# Services environment
-cp apps/relayer/.env.example apps/relayer/.env
-cp apps/indexer/.env.example apps/indexer/.env
-```
-
-Configure your `.env` files:
-
-```env
-# Frontend (.env.local)
-NEXT_PUBLIC_SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2bWZyYmlvamVmdnRiZmdiY2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyMDM1MDMsImV4cCI6MjA3Mjc3OTUwM30.vOknqYlGvcmYoj2L8TuYQuPc-qZIvgei7YGgHRRRvcM
-NEXT_PUBLIC_CHAIN_ID=97
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret
-
-# Relayer
-RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/
-RELAYER_PRIVATE_KEY=your-relayer-private-key
-SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
-SUPABASE_SERVICE_KEY=your-service-key
-
-# Indexer (same as relayer)
-RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/
-CONTRACT_ADDRESS=0x...
-SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
-SUPABASE_SERVICE_KEY=your-service-key
-```
-
-### 4. Smart Contract Deployment
-
-```bash
-# Install contract dependencies
-cd packages/contracts
-npm install
-
-# Compile contracts
-npm run compile
-
-# Deploy to testnet
-npm run deploy:testnet
-
-# Copy the deployed contract address to your .env files
-```
-
-### 5. Start the Application
-
-```bash
-# Start all services
-npm run dev
-
-# Or start individually:
-npm run dev:frontend  # Next.js app on :3000
-npm run dev:relayer   # Relayer service
-npm run dev:indexer   # Indexer service
-```
-
-The game will be available at `http://localhost:3000`
-
-## 🎯 How to Play
-
-1. **Connect Wallet**: Link your MetaMask to BNB Chain
-2. **Sign In**: Use SIWE to authenticate securely
-3. **Deposit BNB**: Add funds to your vault
-4. **Pump Balloon**: Click to inflate and increase potential rewards
-5. **Manage Risk**: Monitor risk levels - too much inflation = POP!
-6. **Cash Out**: Secure your earnings before the balloon bursts
-7. **Earn Rewards**: Successful pumps mint BPM tokens on BNB Chain
 
 ## 📋 Project Structure
 
 ```
 /BNB-BalloonPump/
 ├── apps/
-│   ├── web/              # Next.js frontend application
+│   ├── web/              # Next.js frontend with MetaMask auth
 │   ├── relayer/          # Gasless transaction relayer
 │   └── indexer/          # Blockchain event indexer
 ├── packages/
 │   ├── contracts/        # Hardhat smart contract project
 │   └── shared/           # Shared types and configurations
-├── infra/
-│   ├── supabase/         # Database schema and migrations
-│   └── workflows/        # CI/CD pipelines
-├── .cursor/              # MCP server configurations
-└── scripts/              # Utility scripts
+├── setup-hybrid-schema.sql    # Database schema
+├── HYBRID-DEPLOYMENT-GUIDE.md # Complete deployment guide
+└── *-env-template.txt          # Environment templates
 ```
 
-## 🔧 Available Scripts
+## 🚀 Quick Deployment
 
-### Root Scripts
+### 1. Database Setup (2 minutes)
+1. Go to [Supabase](https://supabase.com/dashboard/project/uvmfrbiojefvtbfgbcfk/sql)
+2. Copy & paste `setup-hybrid-schema.sql` → Click **Run**
+3. Get your `service_role` key from Settings → API
+
+### 2. Deploy Services
+- **Relayer**: Deploy `apps/relayer` to [Railway](https://railway.app)
+- **Indexer**: Deploy `apps/indexer` to Railway (optional for test mode)
+- **Frontend**: Deploy `apps/web` to [Vercel](https://vercel.com)
+
+### 3. Environment Setup
+Use the provided templates:
+- `relayer-env-template.txt` → `apps/relayer/.env`
+- `indexer-env-template.txt` → `apps/indexer/.env`
+- Frontend env vars in Vercel dashboard
+
+## 🎮 How to Play
+
+1. **Connect MetaMask** → Sign SIWE message
+2. **Pump Balloon** → Increase pressure and pot size
+3. **Risk vs Reward** → Higher pressure = higher risk of popping
+4. **Win Big** → Last pumper wins 85% of pot when balloon pops
+5. **Real-time** → See all players' actions instantly
+
+## 🔧 Modes
+
+### Test Mode (`TEST_MODE=true`)
+- ✅ Pure Supabase simulation
+- ✅ No blockchain required
+- ✅ Instant responses
+- ✅ Perfect for development
+
+### Hybrid Mode (`TEST_MODE=false`)
+- ✅ Optimistic Supabase updates
+- ✅ BNB blockchain confirmation
+- ✅ Best user experience
+- ✅ Production ready
+
+## 📚 Documentation
+
+- **[HYBRID-DEPLOYMENT-GUIDE.md](./HYBRID-DEPLOYMENT-GUIDE.md)** - Complete setup guide
+- **[apps/relayer/README.md](./apps/relayer/README.md)** - Relayer service details
+
+## 🛠️ Development
+
 ```bash
-npm run dev              # Start all services
-npm run dev:frontend     # Start only frontend
-npm run dev:relayer      # Start only relayer
-npm run dev:indexer      # Start only indexer
-npm run build            # Build all packages
-npm run test             # Run all tests
-npm run lint             # Lint all code
+# Install dependencies
+npm install
+
+# Start all services
+npm run dev
+
+# Or start individually
+npm run dev:web      # Frontend on :3000
+npm run dev:relayer  # Relayer service
+npm run dev:indexer  # Indexer service
 ```
-
-### Contract Scripts
-```bash
-cd packages/contracts
-npm run compile          # Compile Solidity contracts
-npm run test             # Run contract tests
-npm run deploy:testnet   # Deploy to BNB testnet
-npm run deploy:mainnet   # Deploy to BNB mainnet
-```
-
-### Frontend Scripts
-```bash
-cd apps/web
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Lint code
-```
-
-## 🎨 Smart Contract Details
-
-### BalloonPump.sol Features
-
-- **Vault System**: Deposit/withdraw BNB for gasless pumping
-- **Round Management**: Automated round creation with thresholds
-- **Risk Mechanics**: Progressive difficulty based on balloon size
-- **Reward Distribution**: 85/10/3/1/1 split for winner/2nd/3rd/platform/burn
-- **Relayer Integration**: Only authorized relayer can execute pumps
-- **Emergency Controls**: Pause/unpause and emergency withdrawal
-
-### Key Functions
-
-```solidity
-// User functions
-deposit(address token, uint256 amount)           // Deposit to vault
-withdraw(address token, uint256 amount)          // Withdraw from vault
-pump(address user, address token, uint256 spend) // Pump balloon (relayer only)
-
-// Admin functions
-setConfig(...)                                    // Update contract config
-openRound(uint256 threshold)                      // Start new round
-pause()/unpause()                                // Emergency controls
-```
-
-## 🔗 MCP Server Integrations
-
-The game integrates with 16+ MCP servers for enhanced features:
-
-### 🤖 AI & ML Services
-- **Pixellab**: AI-generated balloon images
-- **Hugging Face**: Advanced AI models
-- **Sequential Thinking**: Strategic game analysis
-
-### ⛓️ Blockchain Services
-- **Tatum.io**: BNB Chain interactions
-- **Solana Developer**: Cross-chain capabilities
-
-### 🛠️ Development Tools
-- **GitHub**: Repository management
-- **Vercel**: Deployment automation
-- **Supabase**: Database and real-time features
 
 ## 🔐 Security Features
 
-### Smart Contract Security
-- Reentrancy protection with ReentrancyGuard
-- Access control with Ownable2Step
-- Emergency pause functionality
-- Input validation on all functions
-- Caps on maximum pump amounts
+- **Smart Contract**: Reentrancy protection, access control, emergency pause
+- **Relayer**: Rate limiting, input validation, secure key management
+- **Frontend**: SIWE authentication, optimistic UI with confirmation
 
-### Relayer Security
-- Rate limiting per user/IP
-- Only authorized contract interactions
-- Isolated private key management
-- Comprehensive error handling
+## 🎯 Benefits
 
-### Frontend Security
-- SIWE authentication (no password storage)
-- Input sanitization and validation
-- Secure RPC communication
-- Optimistic UI with blockchain confirmation
-
-## 📊 Database Schema
-
-### Key Tables
-
-```sql
--- User profiles and authentication
-profiles (
-  id uuid primary key,
-  evm_address text unique,
-  created_at timestamptz
-)
-
--- Confirmed on-chain deposits
-deposits (
-  tx text primary key,
-  user_id uuid,
-  token text,
-  amount numeric,
-  round_id bigint,
-  confirmed boolean
-)
-
--- Pump requests (client → relayer)
-pumps (
-  id uuid primary key,
-  user_id uuid,
-  round_id bigint,
-  token text,
-  spend numeric,
-  status text check (status in ('queued','sent','confirmed','failed'))
-)
-
--- Real-time game state cache
-rounds_cache (
-  round_id bigint primary key,
-  status text,
-  pressure numeric,
-  pot numeric,
-  last1 text, last2 text, last3 text
-)
-
--- Player statistics and leaderboard
-leaderboard (
-  user_id uuid primary key,
-  net_winnings numeric,
-  total_deposited numeric,
-  pops_triggered int
-)
-```
-
-## 🚀 Deployment
-
-### Environment Configuration
-
-#### Development
-- **Frontend**: Vercel/Netlify
-- **Backend Services**: Railway/Fly.io
-- **Database**: Supabase
-- **RPC**: Public BNB testnet RPCs
-
-#### Production
-- **Frontend**: Vercel with custom domain
-- **Services**: Railway with monitoring
-- **Database**: Supabase Pro plan
-- **RPC**: Dedicated RPC nodes (Ankr/GetBlock)
-
-### Deployment Steps
-
-1. **Contract Deployment**:
-   ```bash
-   npm run deploy:mainnet
-   ```
-
-2. **Database Setup**:
-   ```bash
-   # Run migrations on Supabase
-   psql -f infra/supabase/migrations/001_initial.sql
-   ```
-
-3. **Service Deployment**:
-   ```bash
-   # Deploy relayer
-   fly deploy apps/relayer
-
-   # Deploy indexer
-   fly deploy apps/indexer
-   ```
-
-4. **Frontend Deployment**:
-   ```bash
-   vercel --prod apps/web
-   ```
-
-## 🧪 Testing Strategy
-
-### Contract Testing
-```bash
-cd packages/contracts
-npm run test              # Unit tests
-npm run test:gas          # Gas usage analysis
-npm run coverage          # Coverage reports
-```
-
-### Service Testing
-```bash
-# Relayer tests
-cd apps/relayer
-npm run test
-
-# Indexer tests
-cd apps/indexer
-npm run test
-
-# Integration tests
-npm run test:integration
-```
-
-### End-to-End Testing
-```bash
-npm run test:e2e  # Playwright tests
-```
-
-## 📈 Monitoring & Analytics
-
-### Key Metrics
-- **Relayer**: Transaction success rate, queue depth, gas costs
-- **Indexer**: Event processing latency, sync status
-- **Frontend**: Page load times, user engagement
-- **Contracts**: Gas usage, transaction volume
-
-### Monitoring Tools
-- **Sentry**: Error tracking and performance monitoring
-- **Grafana**: Dashboard for service metrics
-- **Supabase Analytics**: Database performance and usage
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run the full test suite: `npm run test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Development Workflow
-
-1. **Local Development**:
-   ```bash
-   npm run dev  # Start all services
-   ```
-
-2. **Testing**:
-   ```bash
-   npm run test:all  # Run complete test suite
-   ```
-
-3. **Code Quality**:
-   ```bash
-   npm run lint     # Lint all code
-   npm run type-check  # TypeScript checks
-   ```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Contract Deployment Fails**:
-   - Check RPC endpoint connectivity
-   - Verify sufficient testnet BNB balance
-   - Ensure correct network configuration
-
-2. **Relayer Connection Issues**:
-   - Verify Supabase credentials
-   - Check relayer private key format
-   - Ensure contract address is correct
-
-3. **Authentication Problems**:
-   - Verify SIWE message format
-   - Check NextAuth configuration
-   - Ensure wallet is on correct network
-
-4. **Database Connection Issues**:
-   - Verify Supabase URL and keys
-   - Check RLS policies
-   - Ensure database is accessible
-
-### Support
-
-For issues and questions:
-- Check the troubleshooting guide above
-- Review the MCP server configurations in `.cursor/`
-- Ensure all environment variables are set correctly
-- Verify wallet connectivity to BNB Chain
-- Check service logs for detailed error messages
-
-## 🎉 Acknowledgments
-
-- Built with the power of MCP servers
-- Inspired by classic risk-reward games
-- Powered by BNB Chain ecosystem
-- Enhanced with AI and machine learning
-- Thanks to the Ethereum and Web3 communities
+- **Instant UX** - No blockchain waiting times
+- **Blockchain Security** - Cryptographic finality
+- **Scalable** - Handles many concurrent users
+- **Cost Effective** - Users don't pay gas fees
+- **Reliable** - Works even if blockchain is slow
 
 ---
 
-**Happy Pumping! 🎈💰**
+**Built with ❤️ for the future of Web3 gaming**
+
+Deploy your hybrid balloon pump game in minutes! 🚀
