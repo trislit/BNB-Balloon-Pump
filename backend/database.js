@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://ltxcyxvhflvzqzcipzte.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0eGN5eHZoZmx2enF6Y2lwenRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjU2MjMsImV4cCI6MjA3MjQ0MTYyM30.uCMT6dRDY5reieyC-9LKwrx5fx1woFSjWrbZ0yzLkP4';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
+}
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Database Tables (SQL DDL for Supabase)

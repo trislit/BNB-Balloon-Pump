@@ -1,7 +1,7 @@
 -- =================================================
 -- BNB BALLOON PUMP GAME DATABASE SCHEMA
 -- Run this in Supabase SQL Editor
--- Project: https://ltxcyxvhflvzqzcipzte.supabase.co
+-- Project: https://uvmfrbiojefvtbfgbcfk.supabase.co
 -- =================================================
 
 -- User Sessions Table

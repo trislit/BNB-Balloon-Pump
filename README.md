@@ -105,8 +105,8 @@ Configure your `.env` files:
 
 ```env
 # Frontend (.env.local)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2bWZyYmlvamVmdnRiZmdiY2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyMDM1MDMsImV4cCI6MjA3Mjc3OTUwM30.vOknqYlGvcmYoj2L8TuYQuPc-qZIvgei7YGgHRRRvcM
 NEXT_PUBLIC_CHAIN_ID=97
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
 NEXTAUTH_URL=http://localhost:3000
@@ -115,13 +115,13 @@ NEXTAUTH_SECRET=your-secret
 # Relayer
 RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/
 RELAYER_PRIVATE_KEY=your-relayer-private-key
-SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
 SUPABASE_SERVICE_KEY=your-service-key
 
 # Indexer (same as relayer)
 RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/
 CONTRACT_ADDRESS=0x...
-SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
 SUPABASE_SERVICE_KEY=your-service-key
 ```
 
