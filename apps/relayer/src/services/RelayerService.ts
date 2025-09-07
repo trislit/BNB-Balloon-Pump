@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { BALLOON_PUMP_ABI, getCurrentChainConfig } from '@balloonpump/shared';
 import { logger } from '../utils/logger';
 import { PumpRequest, PumpResult } from '../types';
+import { TestModeService } from './TestModeService';
 
 export class RelayerService {
   private provider: ethers.JsonRpcProvider;
@@ -11,9 +12,21 @@ export class RelayerService {
   private contract: ethers.Contract;
   private supabase: SupabaseClient;
   private config = getCurrentChainConfig();
+  private testModeService: TestModeService;
+  private isTestMode: boolean;
 
   constructor() {
-    this.initializeProviders();
+    // Check if we're in test mode
+    this.isTestMode = process.env.NODE_ENV === 'test' || process.env.TEST_MODE === 'true';
+
+    if (this.isTestMode) {
+      logger.info('🎮 Running in TEST MODE - Using Supabase-only token tracking');
+      this.initializeTestMode();
+    } else {
+      logger.info('⛓️ Running in PRODUCTION MODE - Using blockchain');
+      this.initializeProviders();
+    }
+
     this.initializeSupabase();
   }
 
@@ -22,7 +35,7 @@ export class RelayerService {
     const fallbackUrl = process.env.RPC_URL_FALLBACK;
 
     if (!primaryUrl) {
-      throw new Error('RPC_URL_PRIMARY is required');
+      throw new Error('RPC_URL_PRIMARY is required for production mode');
     }
 
     this.provider = new ethers.JsonRpcProvider(primaryUrl);
@@ -32,9 +45,13 @@ export class RelayerService {
     }
   }
 
+  private initializeTestMode() {
+    this.testModeService = new TestModeService();
+  }
+
   private initializeSupabase() {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Supabase configuration is required');
@@ -45,10 +62,16 @@ export class RelayerService {
 
   async initialize(): Promise<void> {
     try {
-      // Initialize wallet
+      if (this.isTestMode) {
+        // Test mode initialization
+        logger.info('🎮 Test mode initialized - Ready for Supabase-only operations');
+        return;
+      }
+
+      // Production mode initialization
       const privateKey = process.env.RELAYER_PRIVATE_KEY;
       if (!privateKey) {
-        throw new Error('RELAYER_PRIVATE_KEY is required');
+        throw new Error('RELAYER_PRIVATE_KEY is required for production mode');
       }
 
       this.wallet = new ethers.Wallet(privateKey, this.provider);
@@ -56,7 +79,7 @@ export class RelayerService {
       // Initialize contract
       const contractAddress = process.env.CONTRACT_ADDRESS;
       if (!contractAddress) {
-        throw new Error('CONTRACT_ADDRESS is required');
+        throw new Error('CONTRACT_ADDRESS is required for production mode');
       }
 
       this.contract = new ethers.Contract(contractAddress, BALLOON_PUMP_ABI, this.wallet);
@@ -124,6 +147,12 @@ export class RelayerService {
     try {
       logger.info(`🎈 Starting pump relay for ${request.userAddress}, amount: ${request.amount}`);
 
+      if (this.isTestMode) {
+        // Test mode: Use Supabase simulation
+        return await this.testModeService.simulatePump(request.userAddress, request.amount.toString());
+      }
+
+      // Production mode: Use blockchain
       // Validate request
       const isValid = await this.validatePumpRequest(request);
       if (!isValid) {
@@ -280,14 +309,70 @@ export class RelayerService {
     }
   }
 
+  // Test mode methods
+  async getUserBalance(walletAddress: string): Promise<string> {
+    if (this.isTestMode) {
+      return await this.testModeService.getUserBalance(walletAddress);
+    }
+    // In production, this would query the smart contract
+    return '0';
+  }
+
+  async depositToVault(walletAddress: string, amount: string): Promise<boolean> {
+    if (this.isTestMode) {
+      return await this.testModeService.simulateDeposit(walletAddress, amount);
+    }
+    // In production, this would call smart contract deposit
+    return false;
+  }
+
+  async withdrawFromVault(walletAddress: string, amount: string): Promise<boolean> {
+    if (this.isTestMode) {
+      return await this.testModeService.simulateWithdraw(walletAddress, amount);
+    }
+    // In production, this would call smart contract withdraw
+    return false;
+  }
+
+  async getGameState(): Promise<any> {
+    if (this.isTestMode) {
+      return await this.testModeService.getGameState();
+    }
+    // In production, this would query smart contract
+    return {
+      roundId: 1,
+      status: 'active',
+      pressure: 0,
+      pot: 0,
+      lastPumpers: []
+    };
+  }
+
+  async getLeaderboard(limit: number = 10): Promise<any[]> {
+    if (this.isTestMode) {
+      return await this.testModeService.getLeaderboard(limit);
+    }
+    // In production, this would query smart contract or additional data
+    return [];
+  }
+
   // Health check method
   async getHealthStatus(): Promise<any> {
+    if (this.isTestMode) {
+      return {
+        status: 'healthy',
+        mode: 'test',
+        message: 'Running in test mode with Supabase-only token tracking'
+      };
+    }
+
     try {
       const blockNumber = await this.provider.getBlockNumber();
       const balance = await this.provider.getBalance(this.wallet.address);
 
       return {
         status: 'healthy',
+        mode: 'production',
         blockNumber,
         relayerBalance: ethers.formatEther(balance),
         network: await this.provider.getNetwork()
@@ -295,6 +380,7 @@ export class RelayerService {
     } catch (error) {
       return {
         status: 'unhealthy',
+        mode: 'production',
         error: error.message
       };
     }
