@@ -7,7 +7,11 @@
 NODE_ENV=development
 PORT=3001
 LOG_LEVEL=info
-TEST_MODE=true
+
+# MODE CONFIGURATION
+# TEST_MODE=true    # Pure Supabase simulation (no blockchain)
+# TEST_MODE=false   # Hybrid mode: Supabase + BNB blockchain
+TEST_MODE=false
 
 # RPC Configuration
 RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/

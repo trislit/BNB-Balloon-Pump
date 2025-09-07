@@ -1,0 +1,30 @@
+# =============================================
+# BNB Balloon Pump Indexer - Configuration
+# =============================================
+# Save this as: apps/indexer/.env
+
+# Service Configuration
+NODE_ENV=production
+LOG_LEVEL=info
+
+# RPC Configuration
+RPC_URL_PRIMARY=https://data-seed-prebsc-1-s1.binance.org:8545/
+RPC_URL_FALLBACK=https://data-seed-prebsc-2-s1.binance.org:8545/
+
+# Contract Configuration
+CONTRACT_ADDRESS=0x0000000000000000000000000000000000000000
+CHAIN_ID=97
+
+# Supabase Configuration
+SUPABASE_URL=https://uvmfrbiojefvtbfgbcfk.supabase.co
+SUPABASE_SERVICE_KEY=your-supabase-service-key
+
+# Indexer Settings
+SYNC_INTERVAL_MS=10000  # How often to check for new blocks (10 seconds)
+BATCH_SIZE=1000         # How many blocks to process at once
+START_BLOCK=0           # Block to start indexing from (0 = auto-detect)
+
+# Performance Settings
+MAX_RETRIES=3
+RETRY_DELAY_MS=5000
+RATE_LIMIT_MS=100       # Delay between RPC calls

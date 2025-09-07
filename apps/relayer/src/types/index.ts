@@ -19,6 +19,7 @@ export interface PumpResult {
   gasUsed?: string;
   duration?: number;
   error?: string;
+  pending?: boolean; // Indicates blockchain confirmation pending
 }
 
 export interface QueueStatus {
