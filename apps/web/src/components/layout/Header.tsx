@@ -1,11 +1,12 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useAccount } from 'wagmi';
 import { ConnectWallet } from '@/components/auth/ConnectWallet';
-import { formatEther } from '@balloonpump/shared';
+import { useUserStore } from '@/lib/userStore';
 
 export function Header() {
-  const { data: session } = useSession();
+  const { address, isConnected } = useAccount();
+  const { getNickname } = useUserStore();
 
   return (
     <header className="glass-card mx-4 mt-4 p-4">
@@ -20,9 +21,9 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4">
-          {session && (
+          {isConnected && address && (
             <div className="text-white/80 text-sm">
-              Welcome, {session.user.name}
+              Welcome, {getNickname(address)}
             </div>
           )}
           <ConnectWallet />

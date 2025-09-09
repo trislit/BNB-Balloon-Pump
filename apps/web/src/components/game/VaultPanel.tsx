@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { formatEther } from '@balloonpump/shared';
-import { BALLOON_PUMP_ABI } from '@balloonpump/shared';
-import { getCurrentChainConfig } from '@balloonpump/shared';
+import { formatEther } from '@/lib/shared';
+import { BALLOON_PUMP_ABI, getCurrentChainConfig } from '@/lib/shared';
 
 interface VaultPanelProps {
   vaultBalance?: bigint;

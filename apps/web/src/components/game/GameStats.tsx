@@ -1,6 +1,6 @@
 'use client';
 
-import { formatEther } from '@balloonpump/shared';
+import { formatEther } from '@/lib/shared';
 
 interface GameStatsProps {
   round?: any;

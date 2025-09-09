@@ -1,18 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useAccount, useReadContract, useWriteContract } from 'wagmi';
 import { Balloon } from './Balloon';
 import { GameStats } from './GameStats';
 import { Leaderboard } from './Leaderboard';
 import { VaultPanel } from './VaultPanel';
 import { PumpControls } from './PumpControls';
-import { getCurrentChainConfig } from '@balloonpump/shared';
-import { BALLOON_PUMP_ABI } from '@balloonpump/shared';
+import { getCurrentChainConfig, BALLOON_PUMP_ABI } from '@/lib/shared';
 
 export function GameContainer() {
-  const { data: session } = useSession();
   const { address } = useAccount();
   const [currentRound, setCurrentRound] = useState<any>(null);
   const [userVault, setUserVault] = useState<any>(null);

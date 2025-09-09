@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useConnect, useDisconnect, useAccount } from 'wagmi';
-import { formatEther } from '@balloonpump/shared';
+import { formatEther } from '@/lib/shared';
 
 export function ConnectWallet() {
   const { connectors, connect, isPending } = useConnect();
