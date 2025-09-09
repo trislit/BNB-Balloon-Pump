@@ -15,12 +15,22 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
+
+// Debug CORS configuration
+const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+  'http://localhost:3000',
+  'https://bnb-balloon-pump-gamma.vercel.app',
+  'https://*.vercel.app'
+];
+
+console.log('🔧 CORS Configuration:', {
+  CORS_ORIGINS: process.env.CORS_ORIGINS,
+  parsedOrigins: corsOrigins,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || [
-    'http://localhost:3000',
-    'https://bnb-balloon-pump-gamma.vercel.app',
-    'https://*.vercel.app'
-  ],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
