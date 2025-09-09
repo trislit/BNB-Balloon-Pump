@@ -9,7 +9,7 @@ export const config = createConfig({
   connectors: [
     injected(),
     metaMask(),
-    walletConnect({ projectId }),
+    // walletConnect({ projectId }), // Disabled to avoid demo project ID errors
   ],
   transports: {
     [bsc.id]: http(),
