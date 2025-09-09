@@ -4,7 +4,7 @@ export * from './types';
 export * from './config';
 export * from './abi';
 
-// Utility functions
+// Utility functions - compatible with viem 2.x
 export const formatEther = (wei: bigint): string => {
   return (Number(wei) / 1e18).toFixed(6);
 };
