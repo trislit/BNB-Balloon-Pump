@@ -469,7 +469,7 @@ export class RelayerService {
       await this.supabase
         .from('profiles')
         .update({
-          test_tokens: this.supabase.raw(`CAST(CAST(test_tokens AS DECIMAL) + ${winnerReward} AS TEXT)`)
+          test_tokens: `CAST(CAST(test_tokens AS DECIMAL) + ${winnerReward} AS TEXT)`
         })
         .eq('evm_address', winnerAddress.toLowerCase());
 

@@ -217,7 +217,7 @@ export class TestModeService {
         await this.supabase
           .from('leaderboard')
           .update({
-            total_pumps: this.supabase.raw('total_pumps + 1')
+            total_pumps: 'total_pumps + 1'
           })
           .eq('user_id', walletAddress);
       }

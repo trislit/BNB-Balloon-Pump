@@ -47,7 +47,10 @@ export const queueRoutes = (queueService: QueueService) => {
       // Calculate statistics
       const stats = recentStats.reduce((acc, item) => {
         acc.total++;
-        acc[item.status] = (acc[item.status] || 0) + 1;
+        const status = item.status as keyof typeof acc;
+        if (status in acc && status !== 'total') {
+          acc[status] = (acc[status] || 0) + 1;
+        }
         return acc;
       }, { total: 0, queued: 0, sent: 0, confirmed: 0, failed: 0 });
 

@@ -146,12 +146,15 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
 
       const supabase = relayerService['supabase'];
 
+      const limitNum = parseInt(Array.isArray(limit) ? limit[0] : limit || '10');
+      const offsetNum = parseInt(Array.isArray(offset) ? offset[0] : offset || '0');
+
       const { data, error } = await supabase
         .from('pumps')
         .select('*')
         .eq('user_id', userAddress.toLowerCase())
         .order('requested_at', { ascending: false })
-        .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+        .range(offsetNum, offsetNum + limitNum - 1);
 
       if (error) throw error;
 
