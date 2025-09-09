@@ -193,7 +193,7 @@ export class TestModeService {
       return {
         success: false,
         requestId: `pump_${Date.now()}`,
-        error: error.message
+        error: (error as Error).message
       };
     }
   }

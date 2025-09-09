@@ -548,7 +548,7 @@ export class RelayerService {
       return {
         status: 'unhealthy',
         mode: 'hybrid',
-        error: error.message
+        error: (error as Error).message
       };
     }
   }

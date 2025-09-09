@@ -146,8 +146,8 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
 
       const supabase = relayerService['supabase'];
 
-      const limitNum = parseInt(Array.isArray(limit) ? limit[0] : limit || '10');
-      const offsetNum = parseInt(Array.isArray(offset) ? offset[0] : offset || '0');
+      const limitNum = parseInt(Array.isArray(limit) ? limit[0] as string : (limit as string) || '10');
+      const offsetNum = parseInt(Array.isArray(offset) ? offset[0] as string : (offset as string) || '0');
 
       const { data, error } = await supabase
         .from('pumps')

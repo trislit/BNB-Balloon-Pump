@@ -285,7 +285,7 @@ export class QueueService {
         queued: 0,
         processing: 0,
         isActive: false,
-        error: error.message
+        error: (error as Error).message
       };
     }
   }
