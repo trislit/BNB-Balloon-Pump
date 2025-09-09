@@ -1,6 +1,5 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useAccount } from 'wagmi';
 import { ConnectWallet } from './ConnectWallet';
 import { SignInWithEthereum } from './SignInWithEthereum';
@@ -10,48 +9,36 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { data: session, status } = useSession();
-  const { address, isConnected } = useAccount();
+  const { isConnected, address, isConnecting } = useAccount();
 
-  // Loading state
-  if (status === 'loading') {
+  // Show loading state while connecting
+  if (isConnecting) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
-  // Not connected to wallet
-  if (!isConnected || !address) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="glass-card p-8 max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">Welcome to Balloon Pump</h2>
-          <p className="text-white/80 mb-6">
-            Connect your wallet to start pumping balloons and earning rewards!
-          </p>
-          <ConnectWallet />
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mb-4"></div>
+          <div className="text-white">Connecting wallet...</div>
         </div>
       </div>
     );
   }
 
-  // Connected but not signed in with SIWE
-  if (!session) {
+  // If not connected to wallet, show connect wallet UI
+  if (!isConnected || !address) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="glass-card p-8 max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">Sign In Required</h2>
-          <p className="text-white/80 mb-6">
-            Sign in with your wallet to access the game.
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-2">🎈 Balloon Pump</h1>
+            <p className="text-white/80">Connect your wallet to start playing</p>
+          </div>
+          <ConnectWallet />
           <SignInWithEthereum />
         </div>
       </div>
     );
   }
 
-  // Fully authenticated
+  // User is connected, show the app
   return <>{children}</>;
 }

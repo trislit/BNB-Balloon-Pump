@@ -1,58 +1,57 @@
 'use client';
 
 import { useState } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { formatEther } from '@balloonpump/shared';
-import { BALLOON_PUMP_ABI } from '@balloonpump/shared';
-import { getCurrentChainConfig } from '@balloonpump/shared';
+import { useAccount } from 'wagmi';
+import { apiClient } from '@/lib/apiClient';
 
 interface PumpControlsProps {
-  roundId?: bigint;
-  isActive?: boolean;
-  userVault?: bigint;
+  userBalance?: string;
+  onPumpSuccess?: () => void;
 }
 
-export function PumpControls({ roundId, isActive, userVault }: PumpControlsProps) {
+export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsProps) {
+  const { address } = useAccount();
   const [pumpAmount, setPumpAmount] = useState('100');
-  const config = getCurrentChainConfig();
-  const contractAddress = config.contracts.balloonPump;
-
-  const { writeContract, data: hash, isPending } = useWriteContract();
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastResult, setLastResult] = useState<string | null>(null);
 
   const handlePump = async () => {
-    if (!roundId || !isActive || !userVault) return;
+    if (!address || !pumpAmount || isLoading) return;
 
-    const amount = BigInt(pumpAmount);
-
-    if (amount > userVault) {
-      alert('Insufficient vault balance!');
-      return;
-    }
+    setIsLoading(true);
+    setLastResult(null);
 
     try {
-      writeContract({
-        address: contractAddress as `0x${string}`,
-        abi: BALLOON_PUMP_ABI,
-        functionName: 'pump',
-        args: [config.tokens.BNB, amount], // user, token, amount
+      const result = await apiClient.pump({
+        userAddress: address,
+        amount: pumpAmount,
       });
+
+      if (result.success) {
+        setLastResult('success');
+        onPumpSuccess?.();
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setLastResult(null), 3000);
+      } else {
+        setLastResult(`error: ${result.error}`);
+      }
     } catch (error) {
-      console.error('Pump transaction failed:', error);
-      alert('Failed to pump balloon. Please try again.');
+      console.error('Pump failed:', error);
+      setLastResult('error: Failed to pump balloon');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const maxPumpAmount = userVault ? Math.min(Number(userVault), 1000) : 0;
+  const maxPumpAmount = Math.min(parseFloat(userBalance), 1000);
+  const balanceNum = parseFloat(userBalance);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-white/80 text-sm">
         <span>Pump Amount:</span>
-        <span>Balance: {userVault ? formatEther(userVault) : '0'} BNB</span>
+        <span>Balance: {userBalance} Test Tokens</span>
       </div>
 
       <div className="flex space-x-2">
@@ -91,35 +90,28 @@ export function PumpControls({ roundId, isActive, userVault }: PumpControlsProps
 
       <button
         onClick={handlePump}
-        disabled={!isActive || isPending || isConfirming || !userVault || Number(pumpAmount) > maxPumpAmount}
+        disabled={isLoading || !address || Number(pumpAmount) > balanceNum || Number(pumpAmount) <= 0}
         className="w-full gradient-button disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isPending ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Preparing...
-          </div>
-        ) : isConfirming ? (
+        {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
             Pumping...
           </div>
-        ) : isConfirmed ? (
-          '🎈 Pumped Successfully!'
         ) : (
           '🎈 Pump Balloon'
         )}
       </button>
 
-      {!isActive && (
-        <div className="text-center text-red-400 font-semibold animate-pulse">
-          ⚠️ Round Ended - Wait for Next Round
+      {lastResult === 'success' && (
+        <div className="text-center text-green-400 font-semibold animate-bounce">
+          🎉 Balloon Pumped! +{pumpAmount} pressure
         </div>
       )}
 
-      {isConfirmed && (
-        <div className="text-center text-green-400 font-semibold animate-bounce">
-          🎉 Balloon Pumped! +{pumpAmount} pressure
+      {lastResult && lastResult.startsWith('error:') && (
+        <div className="text-center text-red-400 font-semibold">
+          ❌ {lastResult.replace('error: ', '')}
         </div>
       )}
     </div>

@@ -1,82 +1,42 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
-import { useSignMessage, useAccount } from 'wagmi';
-import { SiweMessage } from 'siwe';
+import { useAccount } from 'wagmi';
+import { NicknameSelector } from './NicknameSelector';
 
 export function SignInWithEthereum() {
-  const { address, chainId } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const [isLoading, setIsLoading] = useState(false);
+  const { address, isConnected } = useAccount();
 
-  const handleSignIn = async () => {
-    if (!address || !chainId) return;
-
-    setIsLoading(true);
-
-    try {
-      // Create SIWE message
-      const message = new SiweMessage({
-        domain: window.location.host,
-        address,
-        statement: 'Sign in to Balloon Pump Game',
-        uri: window.location.origin,
-        version: '1',
-        chainId,
-        nonce: Math.random().toString(36).substring(2, 15),
-      });
-
-      // Sign the message
-      const signature = await signMessageAsync({
-        message: message.prepareMessage(),
-      });
-
-      // Authenticate with NextAuth
-      const result = await signIn('credentials', {
-        message: JSON.stringify(message),
-        signature,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      // Refresh session
-      await getSession();
-
-    } catch (error) {
-      console.error('SIWE sign-in error:', error);
-      alert('Failed to sign in. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!isConnected || !address) {
+    return (
+      <div className="space-y-4">
+        <div className="text-white/80 text-sm mb-4">
+          Connect your wallet to start playing the Balloon Pump game!
+        </div>
+        <div className="text-white/60 text-xs text-center">
+          Your wallet address will be used as your player ID.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="text-white/80 text-sm mb-4">
-        Sign this message to prove you own this wallet and access the game.
+      <div className="glass-card p-4">
+        <div className="text-white/80 text-sm mb-2">Connected as:</div>
+        <div className="font-mono text-white text-sm">
+          {address}
+        </div>
       </div>
-
-      <button
-        onClick={handleSignIn}
-        disabled={isLoading}
-        className="w-full gradient-button disabled:opacity-50"
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Signing...
-          </div>
-        ) : (
-          'Sign In with Ethereum'
-        )}
-      </button>
-
-      <div className="text-white/60 text-xs text-center">
-        This signature proves wallet ownership without revealing your private key.
+      
+      <NicknameSelector />
+      
+      <div className="text-center">
+        <div className="text-green-400 text-sm font-medium">
+          ✅ Ready to play!
+        </div>
+        <div className="text-white/60 text-xs mt-1">
+          You can now pump the balloon and compete for rewards.
+        </div>
       </div>
     </div>
   );
