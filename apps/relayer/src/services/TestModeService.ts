@@ -222,7 +222,7 @@ export class TestModeService {
           .eq('user_id', walletAddress);
       }
     } catch (error) {
-      logger.warn('⚠️ Could not update leaderboard stats:', error.message);
+      logger.warn('⚠️ Could not update leaderboard stats:', (error as Error).message);
     }
   }
 
