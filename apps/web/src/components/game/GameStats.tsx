@@ -3,32 +3,32 @@
 import { formatEther } from '@/lib/shared';
 
 interface GameStatsProps {
-  round?: any;
-  userVault?: bigint;
+  gameState?: any;
+  userBalance?: string;
 }
 
-export function GameStats({ round, userVault }: GameStatsProps) {
-  const pressure = round?.pressure ? Number(round.pressure) : 0;
-  const threshold = round?.threshold ? Number(round.threshold) : 10000;
-  const pot = round?.pot ? Number(round.pot) : 0;
-  const pressurePercentage = threshold > 0 ? (pressure / threshold) * 100 : 0;
+export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
+  const pressure = gameState?.currentPressure || 0;
+  const maxPressure = gameState?.maxPressure || 100;
+  const pot = gameState?.potAmount || '0';
+  const pressurePercentage = maxPressure > 0 ? (pressure / maxPressure) * 100 : 0;
 
   const stats = [
     {
       label: 'Round Status',
-      value: round?.open ? 'Active' : 'Ended',
-      color: round?.open ? 'text-green-400' : 'text-red-400',
-      icon: round?.open ? '🎈' : '💥',
+      value: 'Active',
+      color: 'text-green-400',
+      icon: '🎈',
     },
     {
       label: 'Pressure',
-      value: `${pressure.toLocaleString()} / ${threshold.toLocaleString()}`,
+      value: `${pressure} / ${maxPressure}`,
       color: 'text-blue-400',
       icon: '⚡',
     },
     {
       label: 'Pot Size',
-      value: `${formatEther(BigInt(pot))} BNB`,
+      value: `${parseFloat(pot).toFixed(2)} Tokens`,
       color: 'text-yellow-400',
       icon: '💰',
     },
@@ -39,14 +39,14 @@ export function GameStats({ round, userVault }: GameStatsProps) {
       icon: pressurePercentage > 60 ? '🔴' : pressurePercentage > 40 ? '🟡' : '🟢',
     },
     {
-      label: 'Your Vault',
-      value: userVault ? `${formatEther(userVault)} BNB` : '0 BNB',
+      label: 'Your Balance',
+      value: `${parseFloat(userBalance).toFixed(2)} Tokens`,
       color: 'text-purple-400',
       icon: '🏦',
     },
     {
-      label: 'Last Pumpers',
-      value: round?.lastThree?.filter((addr: string) => addr !== '0x0000000000000000000000000000000000000000').length || 0,
+      label: 'Participants',
+      value: gameState?.participantCount || 0,
       color: 'text-indigo-400',
       icon: '👥',
     },
@@ -93,29 +93,17 @@ export function GameStats({ round, userVault }: GameStatsProps) {
         )}
       </div>
 
-      {/* Last Three Pumpers */}
-      {round?.lastThree && round.lastThree.some((addr: string) => addr !== '0x0000000000000000000000000000000000000000') && (
+      {/* Last Pumper */}
+      {gameState?.lastPumpedBy && (
         <div className="mt-6">
-          <h4 className="text-white font-semibold mb-2">🏆 Last Three Pumpers</h4>
-          <div className="space-y-2">
-            {round.lastThree.map((address: string, index: number) => {
-              if (address === '0x0000000000000000000000000000000000000000') return null;
-
-              const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-              const shortenedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-              return (
-                <div key={address} className="flex items-center justify-between bg-white/5 rounded-lg p-2">
-                  <div className="flex items-center space-x-2">
-                    <span>{medal}</span>
-                    <span className="text-white/80 font-mono text-sm">{shortenedAddress}</span>
-                  </div>
-                  <div className="text-white/60 text-xs">
-                    {index === 0 ? '85%' : index === 1 ? '10%' : '3%'} of pot
-                  </div>
-                </div>
-              );
-            })}
+          <h4 className="text-white font-semibold mb-2">🏆 Last Pumper</h4>
+          <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="text-white/80 font-mono text-sm">
+              {gameState.lastPumpedBy.slice(0, 6)}...{gameState.lastPumpedBy.slice(-4)}
+            </div>
+            <div className="text-white/60 text-xs mt-1">
+              Will win 85% of pot if balloon pops!
+            </div>
           </div>
         </div>
       )}

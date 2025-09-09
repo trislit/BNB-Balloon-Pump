@@ -1,90 +1,90 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { Balloon } from './Balloon';
 import { GameStats } from './GameStats';
 import { Leaderboard } from './Leaderboard';
-import { VaultPanel } from './VaultPanel';
 import { PumpControls } from './PumpControls';
-import { getCurrentChainConfig, BALLOON_PUMP_ABI } from '@/lib/shared';
+import { apiClient } from '@/lib/apiClient';
 
 export function GameContainer() {
   const { address } = useAccount();
-  const [currentRound, setCurrentRound] = useState<any>(null);
-  const [userVault, setUserVault] = useState<any>(null);
+  const [gameState, setGameState] = useState<any>(null);
+  const [userBalance, setUserBalance] = useState<string>('0');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const config = getCurrentChainConfig();
-  const contractAddress = config.contracts.balloonPump;
+  const fetchGameData = async () => {
+    if (!address) return;
+    
+    try {
+      const [state, balance] = await Promise.all([
+        apiClient.getGameState(),
+        apiClient.getUserBalance(address)
+      ]);
+      
+      setGameState(state);
+      setUserBalance(balance);
+    } catch (error) {
+      console.error('Failed to fetch game data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Read current round data
-  const { data: roundData } = useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: BALLOON_PUMP_ABI,
-    functionName: 'getCurrentRound',
-    watch: true,
-  });
-
-  // Read user vault balance
-  const { data: vaultData } = useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: BALLOON_PUMP_ABI,
-    functionName: 'vaults',
-    args: address ? [address, config.tokens.BNB] : undefined,
-    watch: true,
-  });
+  const handlePumpSuccess = () => {
+    // Refresh game data after successful pump
+    fetchGameData();
+  };
 
   useEffect(() => {
-    if (roundData) {
-      setCurrentRound(roundData);
-    }
-    if (vaultData) {
-      setUserVault(vaultData);
-    }
-  }, [roundData, vaultData]);
+    fetchGameData();
+    
+    // Refresh every 5 seconds
+    const interval = setInterval(fetchGameData, 5000);
+    return () => clearInterval(interval);
+  }, [address]);
 
-  if (!session || !address) {
-    return null; // AuthGuard should handle this
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mb-4"></div>
+          <div className="text-white">Loading game...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main Game Area */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Balloon Display */}
-        <div className="glass-card p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">Round #{currentRound?.id || 1}</h2>
-            <div className="text-white/80">
-              Pressure: {currentRound?.pressure ? `${currentRound.pressure.toString()} / ${currentRound.threshold.toString()}` : '0 / 10000'}
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Game Stats & Balloon */}
+          <div className="lg:col-span-2 space-y-6">
+            <GameStats 
+              gameState={gameState}
+              userBalance={userBalance}
+            />
+            
+            <div className="flex justify-center">
+              <Balloon 
+                pressure={gameState?.currentPressure || 0}
+                maxPressure={gameState?.maxPressure || 100}
+              />
             </div>
-          </div>
-
-          <div className="flex justify-center mb-6">
-            <Balloon
-              size={currentRound?.pressure ? Number(currentRound.pressure) / Number(currentRound.threshold) * 100 : 0}
-              isPopped={!currentRound?.open}
+            
+            <PumpControls 
+              userBalance={userBalance}
+              onPumpSuccess={handlePumpSuccess}
             />
           </div>
 
-          <PumpControls
-            roundId={currentRound?.id}
-            isActive={currentRound?.open}
-            userVault={userVault}
-          />
+          {/* Right Column - Leaderboard */}
+          <div className="space-y-6">
+            <Leaderboard />
+          </div>
         </div>
-
-        {/* Game Stats */}
-        <GameStats round={currentRound} userVault={userVault} />
-      </div>
-
-      {/* Sidebar */}
-      <div className="space-y-6">
-        {/* Vault Panel */}
-        <VaultPanel vaultBalance={userVault} />
-
-        {/* Leaderboard */}
-        <Leaderboard />
       </div>
     </div>
   );
