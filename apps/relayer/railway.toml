@@ -1,6 +1,7 @@
 # Railway Configuration for Balloon Pump Relayer Service
 [build]
-builder = "NIXPACKS"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
