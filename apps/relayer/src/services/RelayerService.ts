@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { BALLOON_PUMP_ABI, getCurrentChainConfig } from '@balloonpump/shared';
+import { BALLOON_PUMP_ABI, getCurrentChainConfig } from '../shared';
 import { logger } from '../utils/logger';
 import { PumpRequest, PumpResult } from '../types';
 import { TestModeService } from './TestModeService';
