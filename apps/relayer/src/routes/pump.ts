@@ -186,5 +186,54 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
     }
   });
 
+  // GET /api/pump/state - Get current game state
+  router.get('/state', async (req: Request, res: Response) => {
+    try {
+      const gameState = await relayerService.getGameState();
+
+      res.json({
+        success: true,
+        gameState,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      logger.error('❌ Error getting game state:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
+  // GET /api/pump/balance/:userAddress - Get user balance (alias for vault balance)
+  router.get('/balance/:userAddress', async (req: Request, res: Response) => {
+    try {
+      const { userAddress } = req.params;
+
+      if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid Ethereum address format'
+        });
+      }
+
+      const balance = await relayerService.getUserBalance(userAddress);
+
+      res.json({
+        success: true,
+        balance,
+        userAddress: userAddress.toLowerCase()
+      });
+
+    } catch (error: any) {
+      logger.error(`❌ Error getting user balance for ${req.params.userAddress}:`, error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
   return router;
 };

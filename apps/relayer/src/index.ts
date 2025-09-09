@@ -16,8 +16,14 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true
+  origin: process.env.CORS_ORIGINS?.split(',') || [
+    'http://localhost:3000',
+    'https://bnb-balloon-pump-gamma.vercel.app',
+    'https://*.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
 
