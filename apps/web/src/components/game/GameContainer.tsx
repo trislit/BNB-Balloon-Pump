@@ -76,12 +76,12 @@ export function GameContainer() {
               userBalance={userBalance}
             />
             
-            <div className="flex justify-center">
-              <Balloon 
-                size={gameState?.currentPressure || 0}
-                isPopped={false}
-              />
-            </div>
+                    <div className="flex justify-center">
+                      <Balloon
+                        size={gameState?.pressure || gameState?.currentPressure || 0}
+                        isPopped={false}
+                      />
+                    </div>
             
             <PumpControls 
               userBalance={userBalance}

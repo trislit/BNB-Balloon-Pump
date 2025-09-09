@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
+import { motion } from 'framer-motion';
 import { apiClient } from '@/lib/apiClient';
 
 interface PumpControlsProps {
@@ -88,10 +89,14 @@ export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsP
         </button>
       </div>
 
-      <button
+      <motion.button
         onClick={handlePump}
         disabled={isLoading || !address || Number(pumpAmount) > balanceNum || Number(pumpAmount) <= 0}
         className="w-full gradient-button disabled:opacity-50 disabled:cursor-not-allowed"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        animate={isLoading ? { scale: [1, 1.05, 1] } : {}}
+        transition={{ duration: 0.5, repeat: isLoading ? Infinity : 0 }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center">
@@ -101,12 +106,20 @@ export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsP
         ) : (
           '🎈 Pump Balloon'
         )}
-      </button>
+      </motion.button>
 
       {lastResult === 'success' && (
-        <div className="text-center text-green-400 font-semibold animate-bounce">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: -20 }}
+          className="text-center text-green-400 font-bold text-lg bg-green-500/20 rounded-lg p-4 border border-green-500/30"
+        >
           🎉 Balloon Pumped! +{pumpAmount} pressure
-        </div>
+          <div className="text-sm text-green-300 mt-1">
+            Balloon is growing! 🎈
+          </div>
+        </motion.div>
       )}
 
       {lastResult && lastResult.startsWith('error:') && (

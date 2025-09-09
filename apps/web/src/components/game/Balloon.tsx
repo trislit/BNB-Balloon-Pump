@@ -9,7 +9,18 @@ interface BalloonProps {
 
 export function Balloon({ size, isPopped }: BalloonProps) {
   const balloonSize = Math.max(50, Math.min(150, 50 + (size * 1.5)));
-  const balloonColor = isPopped ? '#ef4444' : size > 80 ? '#f59e0b' : size > 60 ? '#eab308' : '#10b981';
+  
+  // Enhanced color scheme with gradients
+  const getBalloonColor = () => {
+    if (isPopped) return '#ef4444';
+    if (size > 80) return '#dc2626'; // Red for extreme risk
+    if (size > 60) return '#ea580c'; // Orange for high risk  
+    if (size > 40) return '#eab308'; // Yellow for medium risk
+    if (size > 20) return '#22c55e'; // Green for low risk
+    return '#3b82f6'; // Blue for very safe
+  };
+  
+  const balloonColor = getBalloonColor();
 
   if (isPopped) {
     return (
@@ -67,24 +78,42 @@ export function Balloon({ size, isPopped }: BalloonProps) {
           height: `${balloonSize * 1.2}px`,
         }}
       >
-        {/* Balloon body */}
+        {/* Balloon body with gradient */}
         <div
-          className="rounded-full border-4 border-white/20 shadow-lg"
+          className="rounded-full border-4 border-white/30 shadow-2xl relative overflow-hidden"
           style={{
-            backgroundColor: balloonColor,
+            background: `linear-gradient(135deg, ${balloonColor}, ${balloonColor}dd, ${balloonColor}aa)`,
             width: '100%',
             height: '100%',
           }}
-        />
-
-        {/* Balloon shine */}
-        <div
-          className="absolute top-2 left-2 rounded-full bg-white/30"
-          style={{
-            width: '20%',
-            height: '20%',
-          }}
-        />
+        >
+          {/* Balloon shine */}
+          <div
+            className="absolute top-2 left-2 rounded-full bg-white/40 animate-pulse"
+            style={{
+              width: '25%',
+              height: '25%',
+            }}
+          />
+          
+          {/* Additional shine effects */}
+          <div
+            className="absolute top-4 right-3 rounded-full bg-white/20"
+            style={{
+              width: '15%',
+              height: '15%',
+            }}
+          />
+          
+          {/* Pressure lines when high risk */}
+          {size > 70 && (
+            <>
+              <div className="absolute top-6 left-2 w-1 h-8 bg-white/50 rounded-full animate-pulse"></div>
+              <div className="absolute top-10 right-2 w-1 h-6 bg-white/50 rounded-full animate-pulse"></div>
+              <div className="absolute bottom-8 left-8 w-1 h-4 bg-white/50 rounded-full animate-pulse"></div>
+            </>
+          )}
+        </div>
       </motion.div>
 
       {/* String */}
@@ -108,10 +137,25 @@ export function Balloon({ size, isPopped }: BalloonProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute -top-8 left-1/2 transform -translate-x-1/2"
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2"
         >
-          <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
-            HIGH RISK!
+          <div className={`${
+            size > 90 ? 'bg-red-600' : 'bg-red-500'
+          } text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg`}>
+            {size > 90 ? '🚨 CRITICAL!' : '⚠️ HIGH RISK!'}
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Medium risk indicator */}
+      {size > 50 && size <= 70 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+        >
+          <div className="bg-yellow-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg">
+            ⚡ MEDIUM RISK
           </div>
         </motion.div>
       )}
