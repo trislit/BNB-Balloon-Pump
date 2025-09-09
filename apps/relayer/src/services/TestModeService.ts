@@ -157,9 +157,10 @@ export class TestModeService {
 
       // Use database function to simulate pump
       const { data: pumpResult, error } = await this.supabase
-        .rpc('simulate_pump', {
+        .rpc('simulate_pump_hybrid', {
           user_address: walletAddress.toLowerCase(),
-          pump_amount: pumpAmount
+          pump_amount: pumpAmount,
+          is_test: true
         });
 
       if (error) throw error;
