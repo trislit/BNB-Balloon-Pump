@@ -3,6 +3,8 @@ const RELAYER_URL = process.env.NEXT_PUBLIC_RELAYER_URL || 'https://bnb-balloon-
 export interface PumpRequest {
   userAddress: string;
   amount: string;
+  sessionId?: string;
+  token?: string;
 }
 
 export interface PumpResult {
@@ -42,12 +44,20 @@ class ApiClient {
   }
 
   async pump(request: PumpRequest): Promise<PumpResult> {
+    // Add default values for test mode
+    const pumpRequest = {
+      userAddress: request.userAddress,
+      amount: request.amount,
+      sessionId: request.sessionId || 'test-session',
+      token: request.token || 'TEST-TOKEN'
+    };
+
     const response = await fetch(`${this.baseUrl}/api/pump`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify(pumpRequest),
     });
 
     if (!response.ok) {
