@@ -74,7 +74,8 @@ class ApiClient {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.gameState; // Extract the gameState from the API response
   }
 
   async getUserBalance(userAddress: string): Promise<string> {

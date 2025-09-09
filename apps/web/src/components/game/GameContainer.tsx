@@ -26,6 +26,9 @@ export function GameContainer() {
         apiClient.getUserBalance(address)
       ]);
       
+      console.log('🎮 Game State:', state);
+      console.log('💰 User Balance:', balance);
+      
       setGameState(state);
       setUserBalance(balance);
     } catch (error) {
