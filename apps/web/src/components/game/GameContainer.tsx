@@ -45,7 +45,7 @@ export function GameContainer() {
   }, []);
 
   useEffect(() => {
-    if (isMounted) {
+    if (isMounted && address) {
       fetchGameData();
       
       // Refresh every 5 seconds

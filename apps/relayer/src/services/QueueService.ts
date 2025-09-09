@@ -231,24 +231,25 @@ export class QueueService {
 
   async addPumpRequest(request: Omit<PumpRequest, 'id' | 'requestedAt'>): Promise<string> {
     try {
-      const requestId = `pump_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      const { error } = await this.supabase
+      // Let Supabase generate the UUID
+      const { data, error } = await this.supabase
         .from('pumps')
         .insert({
-          id: requestId,
           user_id: request.userAddress,
           session_id: request.sessionId,
-          round_id: request.roundId?.toString(),
+          round_id: request.roundId?.toString() || '1',
           token: request.token,
           spend: request.amount.toString(),
           status: 'queued',
           requested_at: new Date().toISOString(),
           retry_count: 0
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
 
+      const requestId = data.id;
       logger.info(`📥 Added pump request to queue: ${requestId}`);
       return requestId;
 
