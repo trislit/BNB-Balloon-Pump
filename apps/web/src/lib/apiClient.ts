@@ -1,4 +1,4 @@
-const RELAYER_URL = process.env.NEXT_PUBLIC_RELAYER_URL || 'http://localhost:3001';
+const RELAYER_URL = process.env.NEXT_PUBLIC_RELAYER_URL || 'https://bnb-balloon-pump-production.up.railway.app';
 
 export interface PumpRequest {
   userAddress: string;
