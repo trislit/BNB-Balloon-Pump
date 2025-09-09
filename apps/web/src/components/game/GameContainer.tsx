@@ -10,10 +10,12 @@ import { VaultPanel } from './VaultPanel';
 import { apiClient } from '@/lib/apiClient';
 
 export function GameContainer() {
+  // Force redeploy to fix API issues
   const { address } = useAccount();
   const [gameState, setGameState] = useState<any>(null);
   const [userBalance, setUserBalance] = useState<string>('0');
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   const fetchGameData = async () => {
     if (!address) return;
@@ -39,14 +41,20 @@ export function GameContainer() {
   };
 
   useEffect(() => {
-    fetchGameData();
-    
-    // Refresh every 5 seconds
-    const interval = setInterval(fetchGameData, 5000);
-    return () => clearInterval(interval);
-  }, [address]);
+    setIsMounted(true);
+  }, []);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isMounted) {
+      fetchGameData();
+      
+      // Refresh every 5 seconds
+      const interval = setInterval(fetchGameData, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [address, isMounted]);
+
+  if (!isMounted || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
