@@ -74,56 +74,71 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
     }
   });
 
-  // GET /api/pump/:requestId - Get pump request status
-  router.get('/:requestId', async (req: Request, res: Response) => {
+  // GET /api/pump/state - Get current game state
+  router.get('/state', async (req: Request, res: Response) => {
     try {
-      const { requestId } = req.params;
+      const gameState = await relayerService.getGameState();
 
-      if (!requestId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Request ID is required'
-        });
-      }
-
-      // Query the database for the request status
-      const supabase = relayerService['supabase']; // Access private property (not ideal but works)
-
-      const { data, error } = await supabase
-        .from('pumps')
-        .select('*')
-        .eq('id', requestId)
-        .single();
-
-      if (error || !data) {
-        return res.status(404).json({
-          success: false,
-          error: 'Pump request not found'
-        });
-      }
-
-      const response = {
+      res.json({
         success: true,
-        request: {
-          id: data.id,
-          userAddress: data.user_id,
-          sessionId: data.session_id,
-          token: data.token,
-          amount: data.spend,
-          roundId: data.round_id,
-          status: data.status,
-          requestedAt: data.requested_at,
-          relayedTx: data.relayed_tx,
-          errorMessage: data.error_message,
-          retryCount: data.retry_count,
-          updatedAt: data.updated_at
-        }
-      };
-
-      res.json(response);
+        gameState,
+        timestamp: new Date().toISOString()
+      });
 
     } catch (error: any) {
-      logger.error(`❌ Error fetching pump request ${req.params.requestId}:`, error);
+      logger.error('❌ Error getting game state:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
+  // GET /api/pump/balance/:userAddress - Get user balance (alias for vault balance)
+  router.get('/balance/:userAddress', async (req: Request, res: Response) => {
+    try {
+      const { userAddress } = req.params;
+
+      if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid Ethereum address format'
+        });
+      }
+
+      const balance = await relayerService.getUserBalance(userAddress);
+
+      res.json({
+        success: true,
+        balance,
+        userAddress: userAddress.toLowerCase()
+      });
+
+    } catch (error: any) {
+      logger.error(`❌ Error getting user balance for ${req.params.userAddress}:`, error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
+  // GET /api/pump/leaderboard - Get leaderboard
+  router.get('/leaderboard', async (req: Request, res: Response) => {
+    try {
+      const { limit = '10' } = req.query;
+      const limitNum = parseInt(Array.isArray(limit) ? limit[0] as string : (limit as string) || '10');
+
+      const leaderboard = await relayerService.getLeaderboard(limitNum);
+
+      res.json({
+        success: true,
+        leaderboard,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      logger.error('❌ Error getting leaderboard:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
@@ -186,48 +201,56 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
     }
   });
 
-  // GET /api/pump/state - Get current game state
-  router.get('/state', async (req: Request, res: Response) => {
+  // GET /api/pump/:requestId - Get pump request status (MUST BE LAST)
+  router.get('/:requestId', async (req: Request, res: Response) => {
     try {
-      const gameState = await relayerService.getGameState();
+      const { requestId } = req.params;
 
-      res.json({
-        success: true,
-        gameState,
-        timestamp: new Date().toISOString()
-      });
-
-    } catch (error: any) {
-      logger.error('❌ Error getting game state:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Internal server error'
-      });
-    }
-  });
-
-  // GET /api/pump/balance/:userAddress - Get user balance (alias for vault balance)
-  router.get('/balance/:userAddress', async (req: Request, res: Response) => {
-    try {
-      const { userAddress } = req.params;
-
-      if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
+      if (!requestId) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid Ethereum address format'
+          error: 'Request ID is required'
         });
       }
 
-      const balance = await relayerService.getUserBalance(userAddress);
+      // Query the database for the request status
+      const supabase = relayerService['supabase']; // Access private property (not ideal but works)
 
-      res.json({
+      const { data, error } = await supabase
+        .from('pumps')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (error || !data) {
+        return res.status(404).json({
+          success: false,
+          error: 'Pump request not found'
+        });
+      }
+
+      const response = {
         success: true,
-        balance,
-        userAddress: userAddress.toLowerCase()
-      });
+        request: {
+          id: data.id,
+          userAddress: data.user_id,
+          sessionId: data.session_id,
+          token: data.token,
+          amount: data.spend,
+          roundId: data.round_id,
+          status: data.status,
+          requestedAt: data.requested_at,
+          relayedTx: data.relayed_tx,
+          errorMessage: data.error_message,
+          retryCount: data.retry_count,
+          updatedAt: data.updated_at
+        }
+      };
+
+      res.json(response);
 
     } catch (error: any) {
-      logger.error(`❌ Error getting user balance for ${req.params.userAddress}:`, error);
+      logger.error(`❌ Error fetching pump request ${req.params.requestId}:`, error);
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
