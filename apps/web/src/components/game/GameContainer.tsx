@@ -6,6 +6,7 @@ import { Balloon } from './Balloon';
 import { GameStats } from './GameStats';
 import { Leaderboard } from './Leaderboard';
 import { PumpControls } from './PumpControls';
+import { VaultPanel } from './VaultPanel';
 import { apiClient } from '@/lib/apiClient';
 
 export function GameContainer() {
@@ -80,8 +81,12 @@ export function GameContainer() {
             />
           </div>
 
-          {/* Right Column - Leaderboard */}
+          {/* Right Column - Vault & Leaderboard */}
           <div className="space-y-6">
+            <VaultPanel 
+              userBalance={userBalance}
+              onBalanceUpdate={fetchGameData}
+            />
             <Leaderboard />
           </div>
         </div>

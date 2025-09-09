@@ -109,6 +109,56 @@ class ApiClient {
 
     return response.json();
   }
+
+  async depositToVault(userAddress: string, amount: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/vault/deposit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress,
+          amount
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.success;
+    } catch (error) {
+      console.error('Vault deposit failed:', error);
+      return false;
+    }
+  }
+
+  async withdrawFromVault(userAddress: string, amount: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/vault/withdraw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress,
+          amount
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.success;
+    } catch (error) {
+      console.error('Vault withdrawal failed:', error);
+      return false;
+    }
+  }
 }
 
 export const apiClient = new ApiClient();

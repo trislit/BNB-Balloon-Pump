@@ -8,6 +8,7 @@ import { logger } from './utils/logger';
 import { healthRoutes, setServices as setHealthServices } from './routes/health';
 import { pumpRoutes } from './routes/pump';
 import { queueRoutes } from './routes/queue';
+import { vaultRoutes } from './routes/vault';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ setHealthServices(relayerService, queueService);
 app.use('/health', healthRoutes);
 app.use('/api/pump', pumpRoutes(relayerService, queueService));
 app.use('/api/queue', queueRoutes(queueService));
+app.use('/api/vault', vaultRoutes(relayerService));
 
 // Start services
 async function startServices() {
