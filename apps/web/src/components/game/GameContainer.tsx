@@ -79,7 +79,7 @@ export function GameContainer() {
                     <div className="flex justify-center">
                       <Balloon
                         size={gameState?.pressure || gameState?.currentPressure || 0}
-                        isPopped={false}
+                        isPopped={(gameState?.pressure || 0) >= 100}
                       />
                     </div>
             

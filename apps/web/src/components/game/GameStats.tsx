@@ -13,12 +13,14 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
   const pot = gameState?.pot || gameState?.potAmount || '0';
   const pressurePercentage = maxPressure > 0 ? (pressure / maxPressure) * 100 : 0;
 
+  const isPopped = pressure >= 100;
+  
   const stats = [
     {
       label: 'Round Status',
-      value: 'Active',
-      color: 'text-green-400',
-      icon: '🎈',
+      value: isPopped ? 'POPPED!' : 'Active',
+      color: isPopped ? 'text-red-400' : 'text-green-400',
+      icon: isPopped ? '💥' : '🎈',
     },
     {
       label: 'Pressure',
@@ -54,6 +56,15 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
 
   return (
     <div className="glass-card p-6">
+      {isPopped && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4 text-center animate-pulse">
+          <div className="text-2xl mb-2">🎉 BALLOON POPPED! 🎉</div>
+          <div className="text-red-300 font-bold">
+            Last pumper wins {parseFloat(pot).toFixed(2)} tokens!
+          </div>
+        </div>
+      )}
+      
       <h3 className="text-xl font-bold text-white mb-4">📊 Game Statistics</h3>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
