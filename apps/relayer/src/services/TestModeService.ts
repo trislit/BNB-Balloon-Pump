@@ -395,20 +395,27 @@ export class TestModeService {
   private async fallbackPumpSimulation(walletAddress: string, pumpAmount: string): Promise<any[]> {
     try {
       logger.info('🔄 Using fallback pump simulation');
+      logger.info('🔄 Fallback parameters:', { walletAddress, pumpAmount });
       
       // Simple fallback: just update the rounds_cache directly
       const pumpValue = parseFloat(pumpAmount);
       const pressureIncrease = pumpValue / 8; // Simple 1/8th pressure increase
       const potContribution = pumpValue * 0.1; // 10% to pot
       
+      logger.info('🔄 Calculated values:', { pumpValue, pressureIncrease, potContribution });
+      
       // Get current round state
+      logger.info('🔄 Querying rounds_cache for round_id = 1');
       const { data: currentRound, error: roundError } = await this.supabase
         .from('rounds_cache')
         .select('*')
         .eq('round_id', 1)
         .single();
 
+      logger.info('🔄 Round query result:', { currentRound, roundError });
+
       if (roundError && roundError.code !== 'PGRST116') {
+        logger.error('🔄 Round query error:', roundError);
         throw roundError;
       }
 
@@ -438,8 +445,16 @@ export class TestModeService {
       const newPressure = currentPressure + pressureIncrease;
       const newPot = currentPot + potContribution;
 
+      logger.info('🔄 Updating round with:', {
+        newPressure,
+        newPot,
+        last1: walletAddress.toLowerCase(),
+        last2: currentRound?.last1 || null,
+        last3: currentRound?.last2 || null
+      });
+
       // Update the round
-      await this.supabase
+      const { error: updateError } = await this.supabase
         .from('rounds_cache')
         .update({
           pressure: newPressure.toString(),
@@ -450,6 +465,13 @@ export class TestModeService {
           updated_at: new Date().toISOString()
         })
         .eq('round_id', 1);
+
+      if (updateError) {
+        logger.error('🔄 Update error:', updateError);
+        throw updateError;
+      }
+
+      logger.info('🔄 Round updated successfully');
 
       // Return result in the expected format
       return [{
