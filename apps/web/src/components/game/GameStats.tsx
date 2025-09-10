@@ -52,6 +52,12 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
       color: 'text-indigo-400',
       icon: '👥',
     },
+    {
+      label: 'Pop Chance',
+      value: gameState?.popChance ? `${gameState.popChance}%` : '1.00%',
+      color: gameState?.popChance > 10 ? 'text-red-500' : gameState?.popChance > 5 ? 'text-yellow-400' : 'text-green-400',
+      icon: '🎲',
+    },
   ];
 
   return (

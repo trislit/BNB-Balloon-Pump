@@ -443,8 +443,24 @@ export class TestModeService {
       const newPressure = currentPressure + pressureIncrease;
       const newPot = currentPot + potContribution;
 
-      // Check if balloon should pop (pressure >= 100)
-      const balloonPopped = newPressure >= 100;
+      // Calculate dynamic pop probability based on pressure
+      // Higher pressure = higher chance of popping
+      const basePopChance = 0.01; // 1% base chance
+      const pressureMultiplier = Math.max(0, (newPressure - 50) / 50); // Increases after 50 pressure
+      const popChance = basePopChance + (pressureMultiplier * 0.15); // Up to 16% chance at 100+ pressure
+      
+      // Generate random number to determine if balloon pops
+      const randomRoll = Math.random();
+      const balloonPopped = randomRoll < popChance;
+      
+      logger.info('🎲 Balloon pop calculation:', {
+        newPressure,
+        pressureMultiplier,
+        popChance: (popChance * 100).toFixed(2) + '%',
+        randomRoll: (randomRoll * 100).toFixed(2) + '%',
+        balloonPopped
+      });
+      
       let winnerReward = 0;
 
       if (balloonPopped) {
@@ -511,7 +527,7 @@ export class TestModeService {
           new_pot: '0',
           balloon_popped: true,
           winner_reward: winnerReward.toString(),
-          pop_threshold: '100',
+          pop_threshold: (popChance * 100).toFixed(2),
           risk_level: 'LOW'
         }];
       } else {
@@ -549,7 +565,7 @@ export class TestModeService {
           new_pot: newPot.toString(),
           balloon_popped: false,
           winner_reward: '0',
-          pop_threshold: '100',
+          pop_threshold: (popChance * 100).toFixed(2),
           risk_level: newPressure > 90 ? 'EXTREME' : newPressure > 70 ? 'HIGH' : newPressure > 50 ? 'MEDIUM' : 'LOW'
         }];
       }
@@ -606,6 +622,11 @@ export class TestModeService {
       // Calculate pressure percentage (assuming max pressure of 100)
       const pressurePercentage = Math.min(pressure, 100);
 
+      // Calculate pop chance for display
+      const basePopChance = 0.01; // 1% base chance
+      const pressureMultiplier = Math.max(0, (pressure - 50) / 50); // Increases after 50 pressure
+      const popChance = basePopChance + (pressureMultiplier * 0.15); // Up to 16% chance at 100+ pressure
+
       return {
         roundId: roundData.round_id,
         status: roundData.status,
@@ -614,7 +635,8 @@ export class TestModeService {
         lastPumpers: lastPumpers,
         participantCount: participantCount,
         riskLevel: riskLevel,
-        pressurePercentage: pressurePercentage
+        pressurePercentage: pressurePercentage,
+        popChance: (popChance * 100).toFixed(2)
       };
 
     } catch (error) {
@@ -628,7 +650,8 @@ export class TestModeService {
         lastPumpers: [],
         participantCount: 0,
         riskLevel: 'LOW',
-        pressurePercentage: 0
+        pressurePercentage: 0,
+        popChance: '1.00'
       };
     }
   }
