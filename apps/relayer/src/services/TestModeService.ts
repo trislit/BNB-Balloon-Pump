@@ -156,19 +156,52 @@ export class TestModeService {
         .eq('evm_address', walletAddress.toLowerCase());
 
       // Use database function to simulate pump
-      const { data: pumpResult, error } = await this.supabase
-        .rpc('simulate_pump_hybrid', {
-          user_address: walletAddress.toLowerCase(),
-          pump_amount: pumpAmount,
-          is_test: true
-        });
+      logger.info(`🎮 Calling simulate_pump_hybrid with:`, {
+        user_address: walletAddress.toLowerCase(),
+        pump_amount: pumpAmount,
+        is_test: true
+      });
 
-      if (error) {
-        logger.error('❌ Database function error:', error);
-        throw error;
+      let pumpResult;
+      try {
+        const { data, error } = await this.supabase
+          .rpc('simulate_pump_hybrid', {
+            user_address: walletAddress.toLowerCase(),
+            pump_amount: pumpAmount,
+            is_test: true
+          });
+
+        if (error) {
+          logger.error('❌ Database function error:', error);
+          logger.error('❌ Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          
+          // If function doesn't exist, use fallback
+          if (error.code === '42883') {
+            logger.warn('⚠️ Function simulate_pump_hybrid not found, using fallback');
+            pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
+          } else {
+            throw error;
+          }
+        } else {
+          pumpResult = data;
+        }
+      } catch (error) {
+        logger.error('❌ Exception calling pump function:', error);
+        logger.warn('⚠️ Using fallback pump simulation');
+        pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
       }
 
       logger.info('🎮 Pump result from database:', pumpResult);
+      
+      if (!pumpResult || pumpResult.length === 0) {
+        logger.warn('⚠️ No result returned from pump function, using fallback');
+        pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
+      }
 
       // Record pump transaction
       await this.supabase
@@ -342,6 +375,83 @@ export class TestModeService {
     } catch (error) {
       logger.error('❌ Error getting leaderboard:', error);
       return [];
+    }
+  }
+
+  // Fallback pump simulation when database function is not available
+  private async fallbackPumpSimulation(walletAddress: string, pumpAmount: string): Promise<any[]> {
+    try {
+      logger.info('🔄 Using fallback pump simulation');
+      
+      // Simple fallback: just update the rounds_cache directly
+      const pumpValue = parseFloat(pumpAmount);
+      const pressureIncrease = pumpValue / 8; // Simple 1/8th pressure increase
+      const potContribution = pumpValue * 0.1; // 10% to pot
+      
+      // Get current round state
+      const { data: currentRound, error: roundError } = await this.supabase
+        .from('rounds_cache')
+        .select('*')
+        .eq('round_id', 1)
+        .single();
+
+      if (roundError && roundError.code !== 'PGRST116') {
+        throw roundError;
+      }
+
+      let currentPressure = 0;
+      let currentPot = 0;
+
+      if (currentRound) {
+        currentPressure = parseFloat(currentRound.pressure || '0');
+        currentPot = parseFloat(currentRound.pot || '0');
+      } else {
+        // Create initial round if it doesn't exist
+        await this.supabase
+          .from('rounds_cache')
+          .insert({
+            round_id: 1,
+            status: 'active',
+            pressure: '0',
+            pot: '0',
+            last1: null,
+            last2: null,
+            last3: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      const newPressure = currentPressure + pressureIncrease;
+      const newPot = currentPot + potContribution;
+
+      // Update the round
+      await this.supabase
+        .from('rounds_cache')
+        .update({
+          pressure: newPressure.toString(),
+          pot: newPot.toString(),
+          last3: currentRound?.last2 || null,
+          last2: currentRound?.last1 || null,
+          last1: walletAddress.toLowerCase(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('round_id', 1);
+
+      // Return result in the expected format
+      return [{
+        success: true,
+        new_pressure: newPressure.toString(),
+        new_pot: newPot.toString(),
+        balloon_popped: false,
+        winner_reward: '0',
+        pop_threshold: '100',
+        risk_level: newPressure > 50 ? 'HIGH' : 'LOW'
+      }];
+
+    } catch (error) {
+      logger.error('❌ Fallback pump simulation failed:', error);
+      throw error;
     }
   }
 }
