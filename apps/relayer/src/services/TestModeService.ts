@@ -241,21 +241,47 @@ export class TestModeService {
   // Get current game state
   async getGameState(): Promise<any> {
     try {
+      // Use the new function to get current game state
       const { data, error } = await this.supabase
-        .from('rounds_cache')
-        .select('*')
-        .eq('round_id', 1)
-        .single();
+        .rpc('get_current_game_state');
 
       if (error) throw error;
 
-      return {
-        roundId: data.round_id,
-        status: data.status,
-        pressure: parseFloat(data.pressure || '0'),
-        pot: parseFloat(data.pot || '0'),
-        lastPumpers: [data.last1, data.last2, data.last3].filter(addr => addr)
-      };
+      if (data && data.length > 0) {
+        const gameState = data[0];
+        return {
+          roundId: gameState.round_id,
+          status: gameState.status,
+          pressure: parseFloat(gameState.pressure || '0'),
+          pot: parseFloat(gameState.pot || '0'),
+          lastPumpers: [gameState.last1, gameState.last2, gameState.last3].filter(addr => addr),
+          participantCount: gameState.participant_count || 0,
+          riskLevel: gameState.risk_level || 'LOW',
+          pressurePercentage: parseFloat(gameState.pressure_percentage || '0')
+        };
+      } else {
+        // Fallback to direct query if function doesn't exist yet
+        const { data: fallbackData, error: fallbackError } = await this.supabase
+          .from('rounds_cache')
+          .select('*')
+          .eq('status', 'active')
+          .order('round_id', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (fallbackError) throw fallbackError;
+
+        return {
+          roundId: fallbackData.round_id,
+          status: fallbackData.status,
+          pressure: parseFloat(fallbackData.pressure || '0'),
+          pot: parseFloat(fallbackData.pot || '0'),
+          lastPumpers: [fallbackData.last1, fallbackData.last2, fallbackData.last3].filter(addr => addr),
+          participantCount: 0,
+          riskLevel: 'LOW',
+          pressurePercentage: parseFloat(fallbackData.pressure || '0')
+        };
+      }
     } catch (error) {
       logger.error('❌ Error getting game state:', error);
       return {
@@ -263,7 +289,10 @@ export class TestModeService {
         status: 'active',
         pressure: 0,
         pot: 0,
-        lastPumpers: []
+        lastPumpers: [],
+        participantCount: 0,
+        riskLevel: 'LOW',
+        pressurePercentage: 0
       };
     }
   }

@@ -83,6 +83,7 @@ export function GameContainer() {
                       <Balloon
                         size={gameState?.pressure || gameState?.currentPressure || 0}
                         isPopped={(gameState?.pressure || 0) >= 100}
+                        riskLevel={gameState?.riskLevel}
                       />
                     </div>
             

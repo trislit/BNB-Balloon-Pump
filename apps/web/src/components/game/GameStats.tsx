@@ -24,7 +24,7 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Pressure',
-      value: `${pressure} / ${maxPressure}`,
+      value: `${pressure.toFixed(1)} / ${maxPressure}`,
       color: 'text-blue-400',
       icon: '⚡',
     },
@@ -36,9 +36,9 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Risk Level',
-      value: pressurePercentage > 80 ? 'Very High' : pressurePercentage > 60 ? 'High' : pressurePercentage > 40 ? 'Medium' : 'Low',
-      color: pressurePercentage > 60 ? 'text-red-400' : pressurePercentage > 40 ? 'text-yellow-400' : 'text-green-400',
-      icon: pressurePercentage > 60 ? '🔴' : pressurePercentage > 40 ? '🟡' : '🟢',
+      value: gameState?.riskLevel || (pressurePercentage > 80 ? 'EXTREME' : pressurePercentage > 60 ? 'HIGH' : pressurePercentage > 40 ? 'MEDIUM' : 'LOW'),
+      color: gameState?.riskLevel === 'EXTREME' ? 'text-red-500' : gameState?.riskLevel === 'HIGH' ? 'text-red-400' : gameState?.riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-green-400',
+      icon: gameState?.riskLevel === 'EXTREME' ? '🚨' : gameState?.riskLevel === 'HIGH' ? '🔴' : gameState?.riskLevel === 'MEDIUM' ? '🟡' : '🟢',
     },
     {
       label: 'Your Balance',

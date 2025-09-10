@@ -5,19 +5,28 @@ import { motion } from 'framer-motion';
 interface BalloonProps {
   size: number; // 0-100 percentage
   isPopped: boolean;
+  riskLevel?: string;
 }
 
-export function Balloon({ size, isPopped }: BalloonProps) {
+export function Balloon({ size, isPopped, riskLevel }: BalloonProps) {
   const balloonSize = Math.max(50, Math.min(150, 50 + (size * 1.5)));
   
-  // Enhanced color scheme with gradients
+  // Enhanced color scheme with gradients based on risk level
   const getBalloonColor = () => {
     if (isPopped) return '#ef4444';
-    if (size > 80) return '#dc2626'; // Red for extreme risk
-    if (size > 60) return '#ea580c'; // Orange for high risk  
-    if (size > 40) return '#eab308'; // Yellow for medium risk
-    if (size > 20) return '#22c55e'; // Green for low risk
-    return '#3b82f6'; // Blue for very safe
+    
+    // Use risk level if available, otherwise fall back to size-based logic
+    if (riskLevel === 'EXTREME') return '#dc2626'; // Red for extreme risk
+    if (riskLevel === 'HIGH') return '#ea580c'; // Orange for high risk
+    if (riskLevel === 'MEDIUM') return '#eab308'; // Yellow for medium risk
+    if (riskLevel === 'LOW') return '#22c55e'; // Green for low risk
+    
+    // Fallback to size-based logic
+    if (size > 80) return '#dc2626';
+    if (size > 60) return '#ea580c';
+    if (size > 40) return '#eab308';
+    if (size > 20) return '#22c55e';
+    return '#3b82f6';
   };
   
   const balloonColor = getBalloonColor();
@@ -132,23 +141,32 @@ export function Balloon({ size, isPopped }: BalloonProps) {
         </div>
       </div>
 
-      {/* Risk indicator */}
-      {size > 70 && (
+      {/* Risk indicator based on risk level */}
+      {riskLevel === 'EXTREME' && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="absolute -top-12 left-1/2 transform -translate-x-1/2"
         >
-          <div className={`${
-            size > 90 ? 'bg-red-600' : 'bg-red-500'
-          } text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg`}>
-            {size > 90 ? '🚨 CRITICAL!' : '⚠️ HIGH RISK!'}
+          <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg">
+            🚨 EXTREME RISK!
           </div>
         </motion.div>
       )}
-      
-      {/* Medium risk indicator */}
-      {size > 50 && size <= 70 && (
+
+      {riskLevel === 'HIGH' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+        >
+          <div className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg">
+            ⚠️ HIGH RISK!
+          </div>
+        </motion.div>
+      )}
+
+      {riskLevel === 'MEDIUM' && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
