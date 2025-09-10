@@ -457,17 +457,31 @@ export class TestModeService {
           pot: newPot
         });
 
-        // Award winner tokens
-        const { error: rewardError } = await this.supabase
+        // Award winner tokens - get current balance first
+        const { data: currentUser, error: userError } = await this.supabase
           .from('profiles')
-          .update({
-            test_tokens: `CAST(CAST(COALESCE(test_tokens, '0') AS DECIMAL) + ${winnerReward} AS TEXT)`
-          })
-          .eq('evm_address', walletAddress.toLowerCase());
+          .select('test_tokens')
+          .eq('evm_address', walletAddress.toLowerCase())
+          .single();
 
-        if (rewardError) {
-          logger.error('🔄 Reward error:', rewardError);
-          // Continue anyway, don't fail the pump
+        if (userError) {
+          logger.error('🔄 Error getting user balance for reward:', userError);
+        } else {
+          const currentBalance = parseFloat(currentUser.test_tokens || '0');
+          const newBalance = currentBalance + winnerReward;
+          
+          const { error: rewardError } = await this.supabase
+            .from('profiles')
+            .update({
+              test_tokens: newBalance.toString()
+            })
+            .eq('evm_address', walletAddress.toLowerCase());
+
+          if (rewardError) {
+            logger.error('🔄 Reward error:', rewardError);
+          } else {
+            logger.info('🔄 Winner rewarded successfully:', { newBalance });
+          }
         }
 
         // Reset the round for next game
