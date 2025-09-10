@@ -443,43 +443,102 @@ export class TestModeService {
       const newPressure = currentPressure + pressureIncrease;
       const newPot = currentPot + potContribution;
 
-      logger.info('🔄 Updating round with:', {
-        newPressure,
-        newPot,
-        last1: walletAddress.toLowerCase(),
-        last2: currentRound?.last1 || null,
-        last3: currentRound?.last2 || null
-      });
+      // Check if balloon should pop (pressure >= 100)
+      const balloonPopped = newPressure >= 100;
+      let winnerReward = 0;
 
-      // Update the round
-      const { error: updateError } = await this.supabase
-        .from('rounds_cache')
-        .update({
-          pressure: newPressure.toString(),
-          pot: newPot.toString(),
-          last3: currentRound?.last2 || null,
+      if (balloonPopped) {
+        // Calculate winner reward (85% of pot)
+        winnerReward = newPot * 0.85;
+        
+        logger.info('💥 Balloon popped! Awarding winner:', {
+          winner: walletAddress.toLowerCase(),
+          reward: winnerReward,
+          pot: newPot
+        });
+
+        // Award winner tokens
+        const { error: rewardError } = await this.supabase
+          .from('profiles')
+          .update({
+            test_tokens: `CAST(CAST(COALESCE(test_tokens, '0') AS DECIMAL) + ${winnerReward} AS TEXT)`
+          })
+          .eq('evm_address', walletAddress.toLowerCase());
+
+        if (rewardError) {
+          logger.error('🔄 Reward error:', rewardError);
+          // Continue anyway, don't fail the pump
+        }
+
+        // Reset the round for next game
+        const { error: resetError } = await this.supabase
+          .from('rounds_cache')
+          .update({
+            pressure: '0',
+            pot: '0',
+            last1: null,
+            last2: null,
+            last3: null,
+            status: 'active'
+          })
+          .eq('round_id', 1);
+
+        if (resetError) {
+          logger.error('🔄 Reset error:', resetError);
+          throw resetError;
+        }
+
+        logger.info('🔄 Game reset for new round');
+
+        // Return popped result
+        return [{
+          success: true,
+          new_pressure: '0',
+          new_pot: '0',
+          balloon_popped: true,
+          winner_reward: winnerReward.toString(),
+          pop_threshold: '100',
+          risk_level: 'LOW'
+        }];
+      } else {
+        // Normal pump - update the round
+        logger.info('🔄 Updating round with:', {
+          newPressure,
+          newPot,
+          last1: walletAddress.toLowerCase(),
           last2: currentRound?.last1 || null,
-          last1: walletAddress.toLowerCase()
-        })
-        .eq('round_id', 1);
+          last3: currentRound?.last2 || null
+        });
 
-      if (updateError) {
-        logger.error('🔄 Update error:', updateError);
-        throw updateError;
+        const { error: updateError } = await this.supabase
+          .from('rounds_cache')
+          .update({
+            pressure: newPressure.toString(),
+            pot: newPot.toString(),
+            last3: currentRound?.last2 || null,
+            last2: currentRound?.last1 || null,
+            last1: walletAddress.toLowerCase()
+          })
+          .eq('round_id', 1);
+
+        if (updateError) {
+          logger.error('🔄 Update error:', updateError);
+          throw updateError;
+        }
+
+        logger.info('🔄 Round updated successfully');
+
+        // Return normal result
+        return [{
+          success: true,
+          new_pressure: newPressure.toString(),
+          new_pot: newPot.toString(),
+          balloon_popped: false,
+          winner_reward: '0',
+          pop_threshold: '100',
+          risk_level: newPressure > 90 ? 'EXTREME' : newPressure > 70 ? 'HIGH' : newPressure > 50 ? 'MEDIUM' : 'LOW'
+        }];
       }
-
-      logger.info('🔄 Round updated successfully');
-
-      // Return result in the expected format
-      return [{
-        success: true,
-        new_pressure: newPressure.toString(),
-        new_pot: newPot.toString(),
-        balloon_popped: false,
-        winner_reward: '0',
-        pop_threshold: '100',
-        risk_level: newPressure > 50 ? 'HIGH' : 'LOW'
-      }];
 
     } catch (error) {
       logger.error('❌ Fallback pump simulation failed:', error);
