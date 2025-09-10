@@ -436,9 +436,7 @@ export class TestModeService {
             pot: '0',
             last1: null,
             last2: null,
-            last3: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            last3: null
           });
       }
 
@@ -461,8 +459,7 @@ export class TestModeService {
           pot: newPot.toString(),
           last3: currentRound?.last2 || null,
           last2: currentRound?.last1 || null,
-          last1: walletAddress.toLowerCase(),
-          updated_at: new Date().toISOString()
+          last1: walletAddress.toLowerCase()
         })
         .eq('round_id', 1);
 
@@ -498,7 +495,7 @@ export class TestModeService {
       // Get current active round directly from rounds_cache
       const { data: roundData, error } = await this.supabase
         .from('rounds_cache')
-        .select('*')
+        .select('round_id, status, pressure, pot, last1, last2, last3')
         .eq('status', 'active')
         .order('round_id', { ascending: false })
         .limit(1)
