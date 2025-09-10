@@ -285,7 +285,20 @@ export class TestModeService {
 
       if (error) {
         logger.error('❌ Error calling get_current_game_state:', error);
-        throw error;
+        logger.error('❌ Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        // If function doesn't exist, use fallback
+        if (error.code === '42883') {
+          logger.warn('⚠️ Function get_current_game_state not found, using fallback');
+          return await this.fallbackGetGameState();
+        } else {
+          throw error;
+        }
       }
 
       logger.info('🎮 Raw game state from database:', data);
@@ -452,6 +465,79 @@ export class TestModeService {
     } catch (error) {
       logger.error('❌ Fallback pump simulation failed:', error);
       throw error;
+    }
+  }
+
+  // Fallback game state retrieval when database function is not available
+  private async fallbackGetGameState(): Promise<any> {
+    try {
+      logger.info('🔄 Using fallback game state retrieval');
+      
+      // Get current active round directly from rounds_cache
+      const { data: roundData, error } = await this.supabase
+        .from('rounds_cache')
+        .select('*')
+        .eq('status', 'active')
+        .order('round_id', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (!roundData) {
+        // No active round found, return default state
+        return {
+          roundId: 1,
+          status: 'active',
+          pressure: 0,
+          pot: 0,
+          lastPumpers: [],
+          participantCount: 0,
+          riskLevel: 'LOW',
+          pressurePercentage: 0
+        };
+      }
+
+      // Calculate participant count from last pumpers
+      const lastPumpers = [roundData.last1, roundData.last2, roundData.last3].filter(addr => addr);
+      const participantCount = new Set(lastPumpers).size;
+
+      // Calculate risk level
+      const pressure = parseFloat(roundData.pressure || '0');
+      let riskLevel = 'LOW';
+      if (pressure > 90) riskLevel = 'EXTREME';
+      else if (pressure > 70) riskLevel = 'HIGH';
+      else if (pressure > 50) riskLevel = 'MEDIUM';
+
+      // Calculate pressure percentage (assuming max pressure of 100)
+      const pressurePercentage = Math.min(pressure, 100);
+
+      return {
+        roundId: roundData.round_id,
+        status: roundData.status,
+        pressure: pressure,
+        pot: parseFloat(roundData.pot || '0'),
+        lastPumpers: lastPumpers,
+        participantCount: participantCount,
+        riskLevel: riskLevel,
+        pressurePercentage: pressurePercentage
+      };
+
+    } catch (error) {
+      logger.error('❌ Fallback game state retrieval failed:', error);
+      // Return default state on error
+      return {
+        roundId: 1,
+        status: 'active',
+        pressure: 0,
+        pot: 0,
+        lastPumpers: [],
+        participantCount: 0,
+        riskLevel: 'LOW',
+        pressurePercentage: 0
+      };
     }
   }
 }
