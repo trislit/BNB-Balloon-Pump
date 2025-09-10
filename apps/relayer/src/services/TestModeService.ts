@@ -163,7 +163,12 @@ export class TestModeService {
           is_test: true
         });
 
-      if (error) throw error;
+      if (error) {
+        logger.error('❌ Database function error:', error);
+        throw error;
+      }
+
+      logger.info('🎮 Pump result from database:', pumpResult);
 
       // Record pump transaction
       await this.supabase
@@ -245,7 +250,12 @@ export class TestModeService {
       const { data, error } = await this.supabase
         .rpc('get_current_game_state');
 
-      if (error) throw error;
+      if (error) {
+        logger.error('❌ Error calling get_current_game_state:', error);
+        throw error;
+      }
+
+      logger.info('🎮 Raw game state from database:', data);
 
       if (data && data.length > 0) {
         const gameState = data[0];
