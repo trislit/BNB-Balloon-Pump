@@ -181,7 +181,7 @@ export class TestModeService {
           });
           
           // If function doesn't exist, use fallback
-          if (error.code === '42883') {
+          if (error.code === '42883' || error.code === 'PGRST202') {
             logger.warn('⚠️ Function simulate_pump_hybrid not found, using fallback');
             pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
           } else {
@@ -293,7 +293,7 @@ export class TestModeService {
         });
         
         // If function doesn't exist, use fallback
-        if (error.code === '42883') {
+        if (error.code === '42883' || error.code === 'PGRST202') {
           logger.warn('⚠️ Function get_current_game_state not found, using fallback');
           return await this.fallbackGetGameState();
         } else {
