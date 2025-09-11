@@ -119,6 +119,7 @@ BEGIN
       result := json_build_object(
         'success', true,
         'balloon_popped', true,
+        'game_ended', true,
         'pressure', new_pressure::TEXT,
         'pot', new_pot::TEXT,
         'winner', current_round.last1,

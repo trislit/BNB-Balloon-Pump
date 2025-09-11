@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/apiClient';
 
 interface PumpControlsProps {
   userBalance?: string;
-  onPumpSuccess?: () => void;
+  onPumpSuccess?: (result?: any) => void;
 }
 
 export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsProps) {
@@ -30,7 +30,7 @@ export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsP
 
       if (result.success) {
         setLastResult('success');
-        onPumpSuccess?.();
+        onPumpSuccess?.(result);
         
         // Clear success message after 3 seconds
         setTimeout(() => setLastResult(null), 3000);

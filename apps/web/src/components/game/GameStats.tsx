@@ -77,14 +77,6 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
 
   return (
     <div className="glass-card p-6">
-      {isPopped && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4 text-center animate-pulse">
-          <div className="text-2xl mb-2">🎉 BALLOON POPPED! 🎉</div>
-          <div className="text-red-300 font-bold">
-            Last pumper wins {parseFloat(pot).toFixed(2)} tokens!
-          </div>
-        </div>
-      )}
       
       <h3 className="text-xl font-bold text-white mb-4">📊 Game Statistics</h3>
 
@@ -111,16 +103,23 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
         <div className="w-full bg-white/20 rounded-full h-3">
           <div
             className={`h-3 rounded-full transition-all duration-500 ${
-              pressurePercentage > 80 ? 'bg-red-500' :
-              pressurePercentage > 60 ? 'bg-yellow-500' :
+              pressurePercentage > 150 ? 'bg-red-600' :
+              pressurePercentage > 120 ? 'bg-red-500' :
+              pressurePercentage > 100 ? 'bg-orange-500' :
+              pressurePercentage > 80 ? 'bg-yellow-500' :
               'bg-green-500'
             }`}
-            style={{ width: `${Math.min(pressurePercentage, 100)}%` }}
+            style={{ width: `${Math.min(pressurePercentage, 200)}%` }}
           />
         </div>
-        {pressurePercentage > 90 && (
+        {pressurePercentage > 100 && (
           <div className="text-red-400 text-xs mt-2 text-center animate-pulse">
-            ⚠️ CRITICAL RISK - Balloon may pop any moment!
+            🚨 EXTREME RISK - Balloon past 100% pressure!
+          </div>
+        )}
+        {pressurePercentage > 150 && (
+          <div className="text-red-500 text-xs mt-1 text-center animate-bounce">
+            💥 CRITICAL - Pop chance very high!
           </div>
         )}
       </div>
