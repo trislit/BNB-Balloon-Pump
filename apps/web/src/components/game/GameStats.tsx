@@ -51,9 +51,9 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Risk Level',
-      value: pressurePercentage > 150 ? 'EXTREME' : pressurePercentage > 120 ? 'VERY HIGH' : pressurePercentage > 100 ? 'HIGH' : pressurePercentage > 80 ? 'MEDIUM' : 'LOW',
-      color: pressurePercentage > 150 ? 'text-red-500' : pressurePercentage > 120 ? 'text-red-400' : pressurePercentage > 100 ? 'text-orange-400' : pressurePercentage > 80 ? 'text-yellow-400' : 'text-green-400',
-      icon: pressurePercentage > 150 ? '🚨' : pressurePercentage > 120 ? '🔴' : pressurePercentage > 100 ? '🟠' : pressurePercentage > 80 ? '🟡' : '🟢',
+      value: pressurePercentage > 200 ? 'EXTREME' : pressurePercentage > 150 ? 'VERY HIGH' : pressurePercentage > 120 ? 'HIGH' : pressurePercentage > 80 ? 'MEDIUM' : 'LOW',
+      color: pressurePercentage > 200 ? 'text-red-500' : pressurePercentage > 150 ? 'text-red-400' : pressurePercentage > 120 ? 'text-orange-400' : pressurePercentage > 80 ? 'text-yellow-400' : 'text-green-400',
+      icon: pressurePercentage > 200 ? '🚨' : pressurePercentage > 150 ? '🔴' : pressurePercentage > 120 ? '🟠' : pressurePercentage > 80 ? '🟡' : '🟢',
     },
     {
       label: 'Your Vault',

@@ -164,6 +164,9 @@ export class RelayerService {
         };
       }
 
+      // Store the pump result for later use
+      const pumpResult = optimisticResult.pumpResult;
+
       // 2. VALIDATE: Check blockchain state
       const isValid = await this.validatePumpRequest(request);
       if (!isValid) {
@@ -205,7 +208,9 @@ export class RelayerService {
         blockNumber: 0, // Will be updated when confirmed
         gasUsed: '0', // Will be updated when confirmed
         duration,
-        pending: true // Indicates blockchain confirmation pending
+        pending: true, // Indicates blockchain confirmation pending
+        // Include all the database function results
+        ...pumpResult
       };
 
     } catch (error: any) {
@@ -396,10 +401,9 @@ export class RelayerService {
 
       // 3. Update game state optimistically using the new function
       const { data: pumpResult, error: pumpError } = await this.supabase
-        .rpc('simulate_pump_hybrid', {
+        .rpc('simulate_pump_working', {
           user_address: request.userAddress.toLowerCase(),
-          pump_amount: request.amount.toString(),
-          is_test: true
+          pump_amount: request.amount.toString()
         });
 
       if (pumpError || !pumpResult?.success) {
@@ -428,7 +432,7 @@ export class RelayerService {
         logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner}, Amount: ${pumpResult.winner_amount}`);
       }
       
-      return { success: true };
+      return { success: true, pumpResult };
 
     } catch (error: any) {
       logger.error('❌ Failed to apply optimistic update:', error);

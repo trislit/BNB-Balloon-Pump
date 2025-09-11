@@ -156,19 +156,17 @@ export class TestModeService {
         .eq('evm_address', walletAddress.toLowerCase());
 
       // Use database function to simulate pump
-      logger.info(`🎮 Calling simulate_pump_hybrid with:`, {
+      logger.info(`🎮 Calling simulate_pump_working with:`, {
         user_address: walletAddress.toLowerCase(),
-        pump_amount: pumpAmount,
-        is_test: true
+        pump_amount: pumpAmount
       });
 
       let pumpResult;
       try {
         const { data, error } = await this.supabase
-          .rpc('simulate_pump_hybrid', {
+          .rpc('simulate_pump_working', {
             user_address: walletAddress.toLowerCase(),
-            pump_amount: pumpAmount,
-            is_test: true
+            pump_amount: pumpAmount
           });
 
         if (error) {
@@ -218,14 +216,24 @@ export class TestModeService {
 
       logger.info(`✅ Pump simulated: ${walletAddress} -${pumpAmount} tokens, new balance: ${newBalance}`);
 
-      return {
+      // Return the full pump result from the database function
+      const result = {
         success: true,
         requestId: `pump_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         transactionHash: `test_tx_${Date.now()}`,
         blockNumber: Math.floor(Date.now() / 1000),
         gasUsed: '21000',
-        duration: 100
+        duration: 100,
+        // Include all the database function results
+        ...pumpResult
       };
+
+      // Log if balloon popped
+      if (pumpResult.balloon_popped) {
+        logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner}, Amount: ${pumpResult.winner_amount}`);
+      }
+
+      return result;
 
     } catch (error) {
       logger.error('❌ Error simulating pump:', error);
