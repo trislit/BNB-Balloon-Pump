@@ -21,11 +21,18 @@ export interface PumpResult {
 export interface GameState {
   roundId: number;
   currentPressure: number;
+  pressure?: number; // API sometimes returns 'pressure' instead of 'currentPressure'
   maxPressure: number;
   potAmount: string;
+  pot?: string; // API sometimes returns 'pot' instead of 'potAmount'
   participantCount: number;
   lastPumpedBy?: string;
   timeRemaining?: number;
+  // Additional fields from API
+  status?: string;
+  lastPumpers?: string[];
+  riskLevel?: string;
+  pressurePercentage?: number;
 }
 
 export interface LeaderboardEntry {
