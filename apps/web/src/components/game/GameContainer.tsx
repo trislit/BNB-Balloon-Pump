@@ -81,8 +81,8 @@ export function GameContainer() {
             
                     <div className="flex justify-center">
                       <Balloon
-                        size={gameState?.pressure || gameState?.currentPressure || 0}
-                        isPopped={(gameState?.pressure || 0) >= 100}
+                        size={Math.min(((gameState?.pressure || gameState?.currentPressure || 0) / 1000) * 100, 200)}
+                        isPopped={false} // Balloon is never "popped" in UI - it just pops when it pops
                         riskLevel={gameState?.riskLevel}
                       />
                     </div>

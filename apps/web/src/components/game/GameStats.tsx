@@ -9,24 +9,39 @@ interface GameStatsProps {
 
 export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
   const pressure = gameState?.pressure || gameState?.currentPressure || 0;
-  const maxPressure = gameState?.maxPressure || 100;
   const pot = gameState?.pot || gameState?.potAmount || '0';
-  const pressurePercentage = maxPressure > 0 ? (pressure / maxPressure) * 100 : 0;
-
-  const isPopped = pressure >= 100;
+  const pressurePercentage = (pressure / 1000) * 100; // 1000 pressure = 100%
+  
+  // Calculate pop chance based on pressure
+  const getPopChance = () => {
+    if (pressure <= 1000) {
+      return 3 + ((pressure / 1000) * 12); // 3% to 15%
+    } else {
+      const excess = (pressure - 1000) / 1000;
+      return 15 + (excess * excess * 75); // 15% to 90%
+    }
+  };
+  
+  const popChance = Math.min(getPopChance(), 95); // Cap at 95%
   
   const stats = [
     {
       label: 'Round Status',
-      value: isPopped ? 'POPPED!' : 'Active',
-      color: isPopped ? 'text-red-400' : 'text-green-400',
-      icon: isPopped ? '💥' : '🎈',
+      value: 'Active',
+      color: 'text-green-400',
+      icon: '🎈',
     },
     {
       label: 'Pressure',
-      value: `${pressure.toFixed(1)} / ${maxPressure}`,
-      color: 'text-blue-400',
+      value: `${pressure.toFixed(1)} (${pressurePercentage.toFixed(1)}%)`,
+      color: pressurePercentage > 100 ? 'text-red-400' : pressurePercentage > 80 ? 'text-orange-400' : 'text-blue-400',
       icon: '⚡',
+    },
+    {
+      label: 'Pop Chance',
+      value: `${popChance.toFixed(1)}%`,
+      color: popChance > 50 ? 'text-red-400' : popChance > 25 ? 'text-orange-400' : 'text-yellow-400',
+      icon: '💥',
     },
     {
       label: 'Pot Size',
@@ -36,21 +51,15 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Risk Level',
-      value: gameState?.riskLevel || (pressurePercentage > 80 ? 'EXTREME' : pressurePercentage > 60 ? 'HIGH' : pressurePercentage > 40 ? 'MEDIUM' : 'LOW'),
-      color: gameState?.riskLevel === 'EXTREME' ? 'text-red-500' : gameState?.riskLevel === 'HIGH' ? 'text-red-400' : gameState?.riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-green-400',
-      icon: gameState?.riskLevel === 'EXTREME' ? '🚨' : gameState?.riskLevel === 'HIGH' ? '🔴' : gameState?.riskLevel === 'MEDIUM' ? '🟡' : '🟢',
+      value: pressurePercentage > 150 ? 'EXTREME' : pressurePercentage > 120 ? 'VERY HIGH' : pressurePercentage > 100 ? 'HIGH' : pressurePercentage > 80 ? 'MEDIUM' : 'LOW',
+      color: pressurePercentage > 150 ? 'text-red-500' : pressurePercentage > 120 ? 'text-red-400' : pressurePercentage > 100 ? 'text-orange-400' : pressurePercentage > 80 ? 'text-yellow-400' : 'text-green-400',
+      icon: pressurePercentage > 150 ? '🚨' : pressurePercentage > 120 ? '🔴' : pressurePercentage > 100 ? '🟠' : pressurePercentage > 80 ? '🟡' : '🟢',
     },
     {
       label: 'Your Vault',
       value: `${parseFloat(userBalance).toFixed(2)} Tokens`,
       color: 'text-purple-400',
       icon: '🏦',
-    },
-    {
-      label: 'Payout Structure',
-      value: '80/10/5/2.5/2.5',
-      color: 'text-yellow-400',
-      icon: '🎯',
     },
     {
       label: 'Participants',

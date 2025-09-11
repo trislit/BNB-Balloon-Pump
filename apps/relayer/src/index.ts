@@ -16,12 +16,41 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 
-// Debug CORS configuration
+// CORS configuration with dynamic origin support
 const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
   'http://localhost:3000',
   'https://bnb-balloon-pump-gamma.vercel.app',
-  'https://*.vercel.app'
+  'https://bnb-balloon-pump-ljrr97rtz-trislits-projects.vercel.app'
 ];
+
+// Function to check if origin is allowed
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in the allowed list
+    if (corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow any Vercel app domain
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    console.log('🚫 CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 console.log('🔧 CORS Configuration:', {
   CORS_ORIGINS: process.env.CORS_ORIGINS,
@@ -29,12 +58,7 @@ console.log('🔧 CORS Configuration:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
 // Initialize services

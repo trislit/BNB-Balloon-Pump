@@ -35,8 +35,8 @@ BEGIN
   new_pressure := COALESCE(current_round.pressure::DECIMAL, 0) + pump_amount_decimal;
   new_pot := COALESCE(current_round.pot::DECIMAL, 0) + (pump_amount_decimal * 0.1);
   
-  -- Random pop logic - use multiple random factors for better distribution
-  -- Combine pressure with random chance for more realistic popping
+  -- Random pop logic - exponential increase with pressure
+  -- Balloon can go past 1000 pressure with exponentially increasing pop chance
   DECLARE
     random_factor DECIMAL;
     pressure_factor DECIMAL;
@@ -45,19 +45,22 @@ BEGIN
     -- Generate random factor (0-1)
     random_factor := random();
     
-    -- Pressure factor increases chance as pressure builds (0-1)
-    pressure_factor := LEAST(new_pressure / 1000.0, 1.0);
+    -- Pressure factor - exponential increase past 1000
+    -- At 1000: 15% chance, at 1500: 50% chance, at 2000: 90% chance
+    IF new_pressure <= 1000 THEN
+      pressure_factor := new_pressure / 1000.0;
+      combined_chance := 0.03 + (pressure_factor * 0.12); -- 3% to 15%
+    ELSE
+      -- Exponential increase past 1000
+      pressure_factor := (new_pressure - 1000) / 1000.0; -- 0 to 1+ for pressures > 1000
+      combined_chance := 0.15 + (pressure_factor * pressure_factor * 0.75); -- 15% to 90%
+    END IF;
     
-    -- Combined chance: base 3% + pressure-based increase
-    combined_chance := 0.03 + (pressure_factor * 0.12); -- 3% to 15%
+    -- Cap the chance at 95% (never 100% to keep it interesting)
+    combined_chance := LEAST(combined_chance, 0.95);
     
     -- Check if balloon should pop
     should_pop := random_factor < combined_chance;
-    
-    -- If not popped by random chance, check threshold (guaranteed pop at 1000)
-    IF NOT should_pop THEN
-      should_pop := new_pressure >= 1000;
-    END IF;
   END;
   
   IF should_pop THEN
@@ -75,17 +78,20 @@ BEGIN
       dev_amount DECIMAL;
       burn_amount DECIMAL;
     BEGIN
-      -- Calculate pressure ratio (0.0 to 1.0, where 1.0 = 1000+ pressure)
-      pressure_ratio := LEAST(new_pressure / 1000.0, 1.0);
+      -- Calculate pressure ratio (0.0 to 2.0+, where 1.0 = 1000 pressure, 2.0 = 2000 pressure)
+      pressure_ratio := new_pressure / 1000.0;
       
       -- Dynamic payout percentages based on pressure
       -- Early pops (low pressure): More to house (dev/burn)
       -- Later pops (high pressure): More to players
-      winner_pct := 0.5 + (pressure_ratio * 0.3);  -- 50% to 80%
-      second_pct := 0.05 + (pressure_ratio * 0.05); -- 5% to 10%
-      third_pct := 0.02 + (pressure_ratio * 0.03);  -- 2% to 5%
-      dev_pct := 0.15 - (pressure_ratio * 0.1);     -- 15% to 5%
-      burn_pct := 0.28 - (pressure_ratio * 0.28);   -- 28% to 0%
+      -- Cap pressure_ratio at 2.0 for payout calculations (2000+ pressure = max player rewards)
+      pressure_ratio := LEAST(pressure_ratio, 2.0);
+      
+      winner_pct := 0.5 + (pressure_ratio * 0.15);  -- 50% to 80% (at 2000+ pressure)
+      second_pct := 0.05 + (pressure_ratio * 0.025); -- 5% to 10%
+      third_pct := 0.02 + (pressure_ratio * 0.015);  -- 2% to 5%
+      dev_pct := 0.15 - (pressure_ratio * 0.05);     -- 15% to 5%
+      burn_pct := 0.28 - (pressure_ratio * 0.14);    -- 28% to 0%
       
       -- Calculate actual amounts
       winner_amount := new_pot * winner_pct;
@@ -196,15 +202,18 @@ BEGIN
     RETURN json_build_object('error', 'No active round');
   END IF;
   
-  -- Calculate pressure ratio (0.0 to 1.0, where 1.0 = 1000+ pressure)
-  pressure_ratio := LEAST(COALESCE(current_round.pressure::DECIMAL, 0) / 1000.0, 1.0);
+  -- Calculate pressure ratio (0.0 to 2.0+, where 1.0 = 1000 pressure, 2.0 = 2000 pressure)
+  pressure_ratio := COALESCE(current_round.pressure::DECIMAL, 0) / 1000.0;
+  
+  -- Cap pressure_ratio at 2.0 for payout calculations (2000+ pressure = max player rewards)
+  pressure_ratio := LEAST(pressure_ratio, 2.0);
   
   -- Dynamic payout percentages based on pressure
-  winner_pct := 0.5 + (pressure_ratio * 0.3);  -- 50% to 80%
-  second_pct := 0.05 + (pressure_ratio * 0.05); -- 5% to 10%
-  third_pct := 0.02 + (pressure_ratio * 0.03);  -- 2% to 5%
-  dev_pct := 0.15 - (pressure_ratio * 0.1);     -- 15% to 5%
-  burn_pct := 0.28 - (pressure_ratio * 0.28);   -- 28% to 0%
+  winner_pct := 0.5 + (pressure_ratio * 0.15);  -- 50% to 80% (at 2000+ pressure)
+  second_pct := 0.05 + (pressure_ratio * 0.025); -- 5% to 10%
+  third_pct := 0.02 + (pressure_ratio * 0.015);  -- 2% to 5%
+  dev_pct := 0.15 - (pressure_ratio * 0.05);     -- 15% to 5%
+  burn_pct := 0.28 - (pressure_ratio * 0.14);    -- 28% to 0%
   
   RETURN json_build_object(
     'pressure', current_round.pressure,
