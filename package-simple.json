@@ -1,0 +1,44 @@
+{
+  "name": "bnb-balloon-pump",
+  "version": "1.0.0",
+  "description": "Full technical implementation of BNB Balloon Pump Game with monorepo architecture",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/relayer\" \"npm run dev --workspace=apps/indexer\"",                                                                       
+    "dev:frontend": "npm run dev --workspace=apps/web",
+    "dev:relayer": "npm run dev --workspace=apps/relayer",
+    "dev:indexer": "npm run dev --workspace=apps/indexer",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces",
+    "contracts:compile": "npm run compile --workspace=packages/contracts",
+    "contracts:test": "npm run test --workspace=packages/contracts",
+    "contracts:deploy:testnet": "npm run deploy:testnet --workspace=packages/contracts",
+    "shared:build": "npm run build --workspace=packages/shared"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/BNB-BalloonPump.git"
+  },
+  "keywords": [
+    "bnb",
+    "balloon",
+    "pump",
+    "game",
+    "defi",
+    "ethereum",
+    "smart-contracts",
+    "nextjs",
+    "supabase"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

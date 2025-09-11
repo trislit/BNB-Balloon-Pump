@@ -378,7 +378,7 @@ export class RelayerService {
   }
 
   // HYBRID MODE: Optimistic Updates
-  private async applyOptimisticUpdate(request: PumpRequest): Promise<{ success: boolean; error?: string }> {
+  private async applyOptimisticUpdate(request: PumpRequest): Promise<{ success: boolean; error?: string; pumpResult?: any }> {
     try {
       // 1. Check user has enough vault balance in Supabase cache
       const { data: user, error: userError } = await this.supabase
@@ -436,7 +436,7 @@ export class RelayerService {
 
     } catch (error: any) {
       logger.error('❌ Failed to apply optimistic update:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, pumpResult: undefined };
     }
   }
 
