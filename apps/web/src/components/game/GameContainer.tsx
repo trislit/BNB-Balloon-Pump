@@ -18,6 +18,7 @@ export function GameContainer() {
   const [isMounted, setIsMounted] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [gameResult, setGameResult] = useState<any>(null);
+  const [isPumping, setIsPumping] = useState(false);
 
   const fetchGameData = async () => {
     if (!address) return;
@@ -73,9 +74,12 @@ export function GameContainer() {
   };
 
   const handleBalloonClick = async () => {
-    if (!address || gameEnded) return;
+    if (!address || gameEnded || isPumping) return;
     
     try {
+      // Set pumping state to prevent rapid clicks
+      setIsPumping(true);
+      
       // Calculate 1% of current pressure as pump amount
       const currentPressure = gameState?.pressure || gameState?.currentPressure || 0;
       const pumpAmount = Math.max(1, Math.floor(currentPressure * 0.01)); // 1% of current pressure, minimum 1
@@ -96,6 +100,12 @@ export function GameContainer() {
       }
     } catch (error) {
       console.error('Failed to pump balloon:', error);
+    } finally {
+      // Reset pumping state after animation completes (1.5 seconds)
+      // This provides natural cooldown for blockchain integration
+      setTimeout(() => {
+        setIsPumping(false);
+      }, 1500);
     }
   };
 
@@ -217,7 +227,8 @@ export function GameContainer() {
                   isPopped={false} // Balloon is never "popped" in UI - it just pops when it pops
                   riskLevel={gameState?.riskLevel}
                   onClick={handleBalloonClick}
-                  disabled={gameEnded}
+                  disabled={gameEnded || isPumping}
+                  isPumping={isPumping}
                 />
               </div>
               

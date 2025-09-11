@@ -9,10 +9,10 @@ interface BalloonProps {
   riskLevel?: string;
   onClick?: () => void;
   disabled?: boolean;
+  isPumping?: boolean;
 }
 
-export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }: BalloonProps) {
-  const [isPumping, setIsPumping] = useState(false);
+export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, isPumping: externalIsPumping = false }: BalloonProps) {
   const [pumpCount, setPumpCount] = useState(0);
   const [lastSize, setLastSize] = useState(size);
   
@@ -22,14 +22,8 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
   // Detect when balloon size changes (pump happened)
   useEffect(() => {
     if (size > lastSize) {
-      // Balloon was pumped - trigger animation
-      setIsPumping(true);
+      // Balloon was pumped - increment counter
       setPumpCount(prev => prev + 1);
-      
-      // Reset pump animation after 1 second
-      setTimeout(() => {
-        setIsPumping(false);
-      }, 1000);
     }
     setLastSize(size);
   }, [size, lastSize]);
@@ -100,10 +94,10 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
       <div className="relative">
         <motion.div
           className="flex items-center space-x-4"
-          animate={isPumping ? {
-            x: [0, -5, 0],
-            scale: [1, 1.05, 1]
-          } : {}}
+        animate={externalIsPumping ? {
+          x: [0, -5, 0],
+          scale: [1, 1.05, 1]
+        } : {}}
           transition={{
             duration: 0.3,
             ease: "easeInOut"
@@ -112,7 +106,7 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
           {/* Pump Handle */}
           <motion.div
             className="w-8 h-12 bg-gray-600 rounded-lg relative"
-            animate={isPumping ? {
+            animate={externalIsPumping ? {
               scaleY: [1, 0.8, 1]
             } : {}}
             transition={{
@@ -136,7 +130,7 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
           <div className="w-16 h-2 bg-gray-400 rounded-full relative">
             <motion.div
               className="absolute inset-0 bg-blue-300 rounded-full"
-              animate={isPumping ? {
+              animate={externalIsPumping ? {
                 scaleX: [0, 1, 0]
               } : {}}
               transition={{
@@ -151,16 +145,19 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
       {/* Clickable Balloon */}
       <motion.div
         animate={{
-          scale: [1, 1.05, 1],
-          y: [0, -5, 0],
-          // Add inflation animation when pumping
-          scaleY: isPumping ? [1, 1.1, 0.95, 1] : 1,
-          scaleX: isPumping ? [1, 0.9, 1.05, 1] : 1,
+          // Gentle floating animation when not pumping
+          scale: externalIsPumping ? 1 : [1, 1.02, 1],
+          y: externalIsPumping ? 0 : [0, -3, 0],
+          // Dynamic inflation animation when pumping
+          scaleY: externalIsPumping ? [1, 1.15, 0.9, 1.05, 1] : 1,
+          scaleX: externalIsPumping ? [1, 0.85, 1.1, 0.95, 1] : 1,
+          // Add rotation for more realistic effect
+          rotate: externalIsPumping ? [0, 2, -1, 1, 0] : 0,
         }}
         transition={{
-          duration: isPumping ? 0.6 : 2,
-          repeat: isPumping ? 0 : Infinity,
-          ease: "easeInOut"
+          duration: externalIsPumping ? 1.2 : 3,
+          repeat: externalIsPumping ? 0 : Infinity,
+          ease: externalIsPumping ? "easeInOut" : "easeInOut"
         }}
         className={`relative ${onClick && !disabled ? 'cursor-pointer hover:scale-110 transition-transform duration-200' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{
@@ -168,35 +165,93 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
           height: `${balloonSize * 1.2}px`,
         }}
         onClick={disabled ? undefined : onClick}
-        whileHover={disabled ? {} : { scale: 1.1 }}
-        whileTap={disabled ? {} : { scale: 0.95 }}
+        whileHover={disabled ? {} : { 
+          scale: 1.05,
+          transition: { duration: 0.2 }
+        }}
+        whileTap={disabled ? {} : { 
+          scale: 0.9,
+          transition: { duration: 0.1 }
+        }}
       >
         {/* Balloon body with gradient */}
-        <div
+        <motion.div
           className="rounded-full border-4 border-white/30 shadow-2xl relative overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${balloonColor}, ${balloonColor}dd, ${balloonColor}aa)`,
             width: '100%',
             height: '100%',
           }}
+          animate={externalIsPumping ? {
+            // Dramatic inflation effect
+            scale: [1, 1.2, 0.95, 1.1, 1],
+            scaleY: [1, 1.3, 0.9, 1.15, 1],
+            scaleX: [1, 0.8, 1.2, 0.9, 1],
+            // Add breathing effect
+            borderRadius: ['50%', '45%', '55%', '50%', '50%'],
+          } : {}}
+          transition={{
+            duration: 1.2,
+            ease: "easeInOut"
+          }}
         >
           {/* Balloon shine */}
-          <div
-            className="absolute top-2 left-2 rounded-full bg-white/40 animate-pulse"
+          <motion.div
+            className="absolute top-2 left-2 rounded-full bg-white/40"
             style={{
               width: '25%',
               height: '25%',
             }}
+            animate={externalIsPumping ? {
+              scale: [1, 1.5, 0.8, 1.2, 1],
+              opacity: [0.4, 0.8, 0.3, 0.6, 0.4],
+            } : {
+              scale: [1, 1.1, 1],
+              opacity: [0.4, 0.6, 0.4],
+            }}
+            transition={{
+              duration: externalIsPumping ? 1.2 : 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           />
           
           {/* Additional shine effects */}
-          <div
+          <motion.div
             className="absolute top-4 right-3 rounded-full bg-white/20"
             style={{
               width: '15%',
               height: '15%',
             }}
+            animate={externalIsPumping ? {
+              scale: [1, 1.3, 0.9, 1.1, 1],
+              opacity: [0.2, 0.5, 0.1, 0.3, 0.2],
+            } : {
+              scale: [1, 1.05, 1],
+              opacity: [0.2, 0.3, 0.2],
+            }}
+            transition={{
+              duration: externalIsPumping ? 1.2 : 2.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           />
+          
+          {/* Air intake effect during pumping */}
+          {externalIsPumping && (
+            <motion.div
+              className="absolute inset-0 rounded-full border-4 border-blue-300/50"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{
+                scale: [0.8, 1.1, 1],
+                opacity: [0, 0.6, 0],
+              }}
+              transition={{
+                duration: 0.6,
+                ease: "easeOut"
+              }}
+            />
+          )}
           
           {/* Pressure lines when high risk */}
           {size > 70 && (
@@ -210,11 +265,24 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
       </motion.div>
 
       {/* String */}
-      <div
+      <motion.div
         className="mx-auto bg-gray-600"
         style={{
           width: '3px',
           height: '40px',
+        }}
+        animate={externalIsPumping ? {
+          // String sways more during pumping
+          rotate: [0, 3, -2, 1, 0],
+          scaleY: [1, 1.1, 0.95, 1.05, 1],
+        } : {
+          // Gentle sway when not pumping
+          rotate: [0, 1, -1, 0],
+        }}
+        transition={{
+          duration: externalIsPumping ? 1.2 : 4,
+          repeat: Infinity,
+          ease: "easeInOut"
         }}
       />
 
@@ -226,9 +294,16 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
       </div>
 
       {/* Click indicator */}
-      {onClick && !disabled && (
+      {onClick && !disabled && !externalIsPumping && (
         <div className="text-xs text-gray-400 animate-pulse">
           🎈 Click to pump 1%
+        </div>
+      )}
+      
+      {/* Cooldown indicator */}
+      {externalIsPumping && (
+        <div className="text-xs text-blue-400 animate-pulse">
+          ⏳ Pumping... Please wait
         </div>
       )}
       

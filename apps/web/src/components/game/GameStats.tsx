@@ -12,13 +12,13 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
   const pot = gameState?.pot || gameState?.potAmount || '0';
   const pressurePercentage = (pressure / 1000) * 100; // 1000 pressure = 100%
   
-  // Calculate pop chance based on pressure
+  // Calculate pop chance based on pressure percentage (0-100%)
   const getPopChance = () => {
-    if (pressure <= 1000) {
-      return 3 + ((pressure / 1000) * 12); // 3% to 15%
+    if (pressurePercentage <= 100) {
+      return 3 + ((pressurePercentage / 100) * 12); // 3% to 15% for 0-100%
     } else {
-      const excess = (pressure - 1000) / 1000;
-      return 15 + (excess * excess * 75); // 15% to 90%
+      const excess = (pressurePercentage - 100) / 100; // Excess beyond 100%
+      return 15 + (excess * excess * 75); // 15% to 90% for 100%+
     }
   };
   
