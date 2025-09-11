@@ -32,12 +32,6 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
   const getBalloonColor = () => {
     if (isPopped) return '#ef4444';
     
-    // Use risk level if available, otherwise fall back to size-based logic
-    if (riskLevel === 'EXTREME') return '#dc2626'; // Red for extreme risk
-    if (riskLevel === 'HIGH') return '#ea580c'; // Orange for high risk
-    if (riskLevel === 'MEDIUM') return '#eab308'; // Yellow for medium risk
-    if (riskLevel === 'LOW') return '#22c55e'; // Green for low risk
-    
     // Enhanced size-based logic for new pressure ranges
     if (size > 150) return '#dc2626'; // Red for 150%+ (1500+ pressure)
     if (size > 120) return '#ea580c'; // Orange for 120%+ (1200+ pressure)
@@ -94,10 +88,10 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
       <div className="relative">
         <motion.div
           className="flex items-center space-x-4"
-        animate={externalIsPumping ? {
-          x: [0, -5, 0],
-          scale: [1, 1.05, 1]
-        } : {}}
+          animate={externalIsPumping ? {
+            x: [0, -5, 0],
+            scale: [1, 1.05, 1]
+          } : {}}
           transition={{
             duration: 0.3,
             ease: "easeInOut"
@@ -114,16 +108,14 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
               ease: "easeInOut"
             }}
           >
-            <div className="absolute top-1 left-1 right-1 h-2 bg-gray-400 rounded"></div>
-            <div className="absolute bottom-1 left-1 right-1 h-2 bg-gray-400 rounded"></div>
+            <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-6 h-2 bg-gray-500 rounded"></div>
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-2 bg-gray-700 rounded"></div>
           </motion.div>
           
           {/* Pump Body */}
-          <div className="w-6 h-16 bg-gray-500 rounded-lg relative">
-            <div className="absolute top-2 left-1 right-1 h-1 bg-gray-300 rounded"></div>
-            <div className="absolute top-4 left-1 right-1 h-1 bg-gray-300 rounded"></div>
-            <div className="absolute top-6 left-1 right-1 h-1 bg-gray-300 rounded"></div>
-            <div className="absolute top-8 left-1 right-1 h-1 bg-gray-300 rounded"></div>
+          <div className="w-12 h-8 bg-gray-500 rounded-lg relative">
+            <div className="absolute top-1 left-1 w-10 h-6 bg-gray-400 rounded"></div>
+            <div className="absolute top-2 left-2 w-8 h-4 bg-gray-300 rounded"></div>
           </div>
           
           {/* Air Hose */}
@@ -164,19 +156,13 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
           width: `${balloonSize}px`,
           height: `${balloonSize * 1.2}px`,
         }}
-        onClick={disabled ? undefined : onClick}
-        whileHover={disabled ? {} : { 
-          scale: 1.05,
-          transition: { duration: 0.2 }
-        }}
-        whileTap={disabled ? {} : { 
-          scale: 0.9,
-          transition: { duration: 0.1 }
-        }}
+        onClick={onClick && !disabled ? onClick : undefined}
+        whileHover={onClick && !disabled ? { scale: 1.05 } : {}}
+        whileTap={onClick && !disabled ? { scale: 0.95 } : {}}
       >
-        {/* Balloon body with gradient */}
+        {/* Balloon Body */}
         <motion.div
-          className="rounded-full border-4 border-white/30 shadow-2xl relative overflow-hidden"
+          className="w-full h-full rounded-full relative overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${balloonColor}, ${balloonColor}dd, ${balloonColor}aa)`,
             width: '100%',
@@ -195,7 +181,7 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
             ease: "easeInOut"
           }}
         >
-          {/* Balloon shine */}
+          {/* Shine effects */}
           <motion.div
             className="absolute top-2 left-2 rounded-full bg-white/40"
             style={{
@@ -244,23 +230,21 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{
                 scale: [0.8, 1.1, 1],
-                opacity: [0, 0.6, 0],
+                opacity: [0, 0.8, 0],
               }}
               transition={{
                 duration: 0.6,
-                ease: "easeOut"
+                ease: "easeInOut"
               }}
             />
           )}
-          
-          {/* Pressure lines when high risk */}
-          {size > 70 && (
-            <>
-              <div className="absolute top-6 left-2 w-1 h-8 bg-white/50 rounded-full animate-pulse"></div>
-              <div className="absolute top-10 right-2 w-1 h-6 bg-white/50 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-8 left-8 w-1 h-4 bg-white/50 rounded-full animate-pulse"></div>
-            </>
-          )}
+        </motion.div>
+
+        {/* Balloon Details */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-2xl font-bold text-white/80 drop-shadow-lg">
+            🎈
+          </div>
         </div>
       </motion.div>
 
@@ -314,35 +298,47 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
         </div>
       )}
 
-      {/* Risk indicator based on risk level */}
+      {/* Risk level indicator */}
       {riskLevel === 'EXTREME' && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           className="absolute -top-12 left-1/2 transform -translate-x-1/2"
         >
-          <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg">
-            🚨 EXTREME RISK!
+          <div className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg">
+            ⚠️ EXTREME RISK
           </div>
         </motion.div>
       )}
-
+      
+      {riskLevel === 'VERY HIGH' && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2"
+        >
+          <div className="bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg">
+            🔥 VERY HIGH RISK
+          </div>
+        </motion.div>
+      )}
+      
       {riskLevel === 'HIGH' && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           className="absolute -top-12 left-1/2 transform -translate-x-1/2"
         >
-          <div className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-bold animate-pulse shadow-lg">
-            ⚠️ HIGH RISK!
+          <div className="bg-yellow-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg">
+            ⚡ HIGH RISK
           </div>
         </motion.div>
       )}
-
+      
       {riskLevel === 'MEDIUM' && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           className="absolute -top-12 left-1/2 transform -translate-x-1/2"
         >
           <div className="bg-yellow-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg">
