@@ -33,8 +33,8 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Pressure',
-      value: `${pressure.toFixed(1)} (${pressurePercentage.toFixed(1)}%)`,
-      color: pressurePercentage > 100 ? 'text-red-400' : pressurePercentage > 80 ? 'text-orange-400' : 'text-blue-400',
+      value: `${pressure.toFixed(1)} (${(gameState?.pressurePercentage || pressurePercentage).toFixed(1)}%)`,
+      color: (gameState?.pressurePercentage || pressurePercentage) > 100 ? 'text-red-400' : (gameState?.pressurePercentage || pressurePercentage) > 80 ? 'text-orange-400' : 'text-blue-400',
       icon: '⚡',
     },
     {
@@ -51,9 +51,15 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
     },
     {
       label: 'Risk Level',
-      value: pressurePercentage > 200 ? 'EXTREME' : pressurePercentage > 150 ? 'VERY HIGH' : pressurePercentage > 120 ? 'HIGH' : pressurePercentage > 80 ? 'MEDIUM' : 'LOW',
-      color: pressurePercentage > 200 ? 'text-red-500' : pressurePercentage > 150 ? 'text-red-400' : pressurePercentage > 120 ? 'text-orange-400' : pressurePercentage > 80 ? 'text-yellow-400' : 'text-green-400',
-      icon: pressurePercentage > 200 ? '🚨' : pressurePercentage > 150 ? '🔴' : pressurePercentage > 120 ? '🟠' : pressurePercentage > 80 ? '🟡' : '🟢',
+      value: gameState?.riskLevel || (pressurePercentage > 200 ? 'EXTREME' : pressurePercentage > 150 ? 'VERY HIGH' : pressurePercentage > 120 ? 'HIGH' : pressurePercentage > 80 ? 'MEDIUM' : 'LOW'),
+      color: gameState?.riskLevel === 'EXTREME' ? 'text-red-500' : 
+             gameState?.riskLevel === 'VERY HIGH' ? 'text-red-400' : 
+             gameState?.riskLevel === 'HIGH' ? 'text-orange-400' : 
+             gameState?.riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-green-400',
+      icon: gameState?.riskLevel === 'EXTREME' ? '🚨' : 
+            gameState?.riskLevel === 'VERY HIGH' ? '🔴' : 
+            gameState?.riskLevel === 'HIGH' ? '🟠' : 
+            gameState?.riskLevel === 'MEDIUM' ? '🟡' : '🟢',
     },
     {
       label: 'Your Vault',
@@ -98,26 +104,26 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
       <div className="mt-6">
         <div className="flex justify-between text-white/80 text-sm mb-2">
           <span>Pressure Progress</span>
-          <span>{pressurePercentage.toFixed(1)}%</span>
+          <span>{(gameState?.pressurePercentage || pressurePercentage).toFixed(1)}%</span>
         </div>
         <div className="w-full bg-white/20 rounded-full h-3">
           <div
             className={`h-3 rounded-full transition-all duration-500 ${
-              pressurePercentage > 150 ? 'bg-red-600' :
-              pressurePercentage > 120 ? 'bg-red-500' :
-              pressurePercentage > 100 ? 'bg-orange-500' :
-              pressurePercentage > 80 ? 'bg-yellow-500' :
+              (gameState?.pressurePercentage || pressurePercentage) > 150 ? 'bg-red-600' :
+              (gameState?.pressurePercentage || pressurePercentage) > 120 ? 'bg-red-500' :
+              (gameState?.pressurePercentage || pressurePercentage) > 100 ? 'bg-orange-500' :
+              (gameState?.pressurePercentage || pressurePercentage) > 80 ? 'bg-yellow-500' :
               'bg-green-500'
             }`}
-            style={{ width: `${Math.min(pressurePercentage, 200)}%` }}
+            style={{ width: `${Math.min(gameState?.pressurePercentage || pressurePercentage, 200)}%` }}
           />
         </div>
-        {pressurePercentage > 100 && (
+        {(gameState?.pressurePercentage || pressurePercentage) > 100 && (
           <div className="text-red-400 text-xs mt-2 text-center animate-pulse">
             🚨 EXTREME RISK - Balloon past 100% pressure!
           </div>
         )}
-        {pressurePercentage > 150 && (
+        {(gameState?.pressurePercentage || pressurePercentage) > 150 && (
           <div className="text-red-500 text-xs mt-1 text-center animate-bounce">
             💥 CRITICAL - Pop chance very high!
           </div>

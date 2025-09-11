@@ -6,9 +6,11 @@ interface BalloonProps {
   size: number; // 0-100 percentage
   isPopped: boolean;
   riskLevel?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }
 
-export function Balloon({ size, isPopped, riskLevel }: BalloonProps) {
+export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }: BalloonProps) {
   // Balloon can now grow beyond 100% - up to 200% (2000+ pressure)
   const balloonSize = Math.max(50, Math.min(250, 50 + (size * 1.0)));
   
@@ -74,7 +76,7 @@ export function Balloon({ size, isPopped, riskLevel }: BalloonProps) {
 
   return (
     <div className="relative">
-      {/* Balloon */}
+      {/* Clickable Balloon */}
       <motion.div
         animate={{
           scale: [1, 1.05, 1],
@@ -85,11 +87,14 @@ export function Balloon({ size, isPopped, riskLevel }: BalloonProps) {
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className="relative"
+        className={`relative ${onClick && !disabled ? 'cursor-pointer hover:scale-110 transition-transform duration-200' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{
           width: `${balloonSize}px`,
           height: `${balloonSize * 1.2}px`,
         }}
+        onClick={disabled ? undefined : onClick}
+        whileHover={disabled ? {} : { scale: 1.1 }}
+        whileTap={disabled ? {} : { scale: 0.95 }}
       >
         {/* Balloon body with gradient */}
         <div
@@ -144,6 +149,15 @@ export function Balloon({ size, isPopped, riskLevel }: BalloonProps) {
           {size.toFixed(1)}%
         </div>
       </div>
+
+      {/* Click indicator */}
+      {onClick && !disabled && (
+        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+          <div className="bg-purple-600/80 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
+            🎈 Click to pump 1%
+          </div>
+        </div>
+      )}
 
       {/* Risk indicator based on risk level */}
       {riskLevel === 'EXTREME' && (

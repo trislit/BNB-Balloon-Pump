@@ -31,7 +31,18 @@ export function GameContainer() {
       console.log('🎮 Game State:', state);
       console.log('💰 User Balance:', balance);
       
-      setGameState(state);
+      // Calculate consistent risk level
+      const pressure = state?.pressure || state?.currentPressure || 0;
+      const pressurePercentage = (pressure / 1000) * 100;
+      const riskLevel = pressurePercentage > 200 ? 'EXTREME' : 
+                       pressurePercentage > 150 ? 'VERY HIGH' : 
+                       pressurePercentage > 120 ? 'HIGH' : 
+                       pressurePercentage > 80 ? 'MEDIUM' : 'LOW';
+      
+      // Add calculated risk level to game state
+      const enhancedState = { ...state, riskLevel, pressurePercentage };
+      
+      setGameState(enhancedState);
       setUserBalance(balance);
     } catch (error) {
       console.error('Failed to fetch game data:', error);
@@ -54,6 +65,33 @@ export function GameContainer() {
     setGameEnded(false);
     setGameResult(null);
     fetchGameData();
+  };
+
+  const handleBalloonClick = async () => {
+    if (!address || gameEnded) return;
+    
+    try {
+      // Calculate 1% of current pressure as pump amount
+      const currentPressure = gameState?.pressure || 0;
+      const pumpAmount = Math.max(1, Math.floor(currentPressure * 0.01)); // 1% of current pressure, minimum 1
+      
+      console.log('🎈 Balloon clicked! Pumping 1%:', pumpAmount);
+      
+      const result = await apiClient.pump({
+        userAddress: address,
+        amount: pumpAmount.toString(),
+        sessionId: `balloon_click_${Date.now()}`,
+        token: '0x0000000000000000000000000000000000000000' // Default token
+      });
+      
+      if (result.success) {
+        handlePumpSuccess(result);
+      } else {
+        console.error('Balloon pump failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to pump balloon:', error);
+    }
   };
 
   useEffect(() => {
@@ -170,9 +208,11 @@ export function GameContainer() {
               
               <div className="flex justify-center">
                 <Balloon
-                  size={Math.min(((gameState?.pressure || gameState?.currentPressure || 0) / 1000) * 100, 200)}
+                  size={gameState?.pressurePercentage || Math.min(((gameState?.pressure || gameState?.currentPressure || 0) / 1000) * 100, 200)}
                   isPopped={false} // Balloon is never "popped" in UI - it just pops when it pops
                   riskLevel={gameState?.riskLevel}
+                  onClick={handleBalloonClick}
+                  disabled={gameEnded}
                 />
               </div>
               
