@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "description": "Full technical implementation of BNB Balloon Pump Game with monorepo architecture",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/relayer\" \"npm run dev --workspace=apps/indexer\"",
+    "dev": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/relayer\" \"npm run dev --workspace=apps/indexer\"",                                                                       
     "dev:frontend": "npm run dev --workspace=apps/web",
     "dev:relayer": "npm run dev --workspace=apps/relayer",
     "dev:indexer": "npm run dev --workspace=apps/indexer",
@@ -30,16 +26,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/BNB-BalloonPump.git"
+    "url": "git+https://github.com/your-username/BNB-BalloonPump.git"
   },
   "keywords": [
-    "blockchain",
-    "web3",
-    "gaming",
-    "bnb-chain",
+    "bnb",
+    "balloon",
+    "pump",
+    "game",
+    "defi",
+    "ethereum",
     "smart-contracts",
     "nextjs",
-    "monorepo"
+    "supabase"
   ],
   "author": "Your Name",
   "license": "MIT"

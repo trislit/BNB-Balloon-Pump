@@ -8,7 +8,7 @@ interface GameStatsProps {
 }
 
 export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
-  const pressure = gameState?.pressure || gameState?.currentPressure || 0;
+  const pressure = gameState?.currentPressure || 0;
   const pot = gameState?.pot || gameState?.potAmount || '0';
   const pressurePercentage = (pressure / 1000) * 100; // 1000 pressure = 100%
   
