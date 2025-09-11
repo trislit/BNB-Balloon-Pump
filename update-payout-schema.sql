@@ -73,7 +73,7 @@ BEGIN
   
   -- Calculate new pressure and pot
   new_pressure := COALESCE(current_round.pressure::DECIMAL, 0) + pump_amount_decimal;
-  new_pot := COALESCE(current_round.pot::DECIMAL, 0) + (pump_amount_decimal * 0.1); -- 10% goes to pot
+  new_pot := COALESCE(current_round.pot::DECIMAL, 0) + pump_amount_decimal; -- 100% goes to pot
   
   -- Check if balloon should pop (threshold or random)
   should_pop := new_pressure >= COALESCE(current_round.threshold::DECIMAL, 1000);

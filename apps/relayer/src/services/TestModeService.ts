@@ -408,7 +408,7 @@ export class TestModeService {
       // Simple fallback: just update the rounds_cache directly
       const pumpValue = parseFloat(pumpAmount);
       const pressureIncrease = pumpValue / 8; // Simple 1/8th pressure increase
-      const potContribution = pumpValue * 0.1; // 10% to pot
+      const potContribution = pumpValue; // 100% to pot
       
       logger.info('🔄 Calculated values:', { pumpValue, pressureIncrease, potContribution });
       

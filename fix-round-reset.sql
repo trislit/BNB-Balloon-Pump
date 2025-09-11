@@ -33,7 +33,7 @@ BEGIN
   
   -- Calculate new pressure and pot
   new_pressure := COALESCE(current_round.pressure::DECIMAL, 0) + pump_amount_decimal;
-  new_pot := COALESCE(current_round.pot::DECIMAL, 0) + (pump_amount_decimal * 0.1);
+  new_pot := COALESCE(current_round.pot::DECIMAL, 0) + pump_amount_decimal;
   
   -- Random pop logic - exponential increase with pressure
   -- Balloon can go past 1000 pressure with exponentially increasing pop chance
