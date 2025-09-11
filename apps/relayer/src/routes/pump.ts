@@ -123,6 +123,32 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
     }
   });
 
+  // GET /api/pump/payout-percentages - Get current dynamic payout percentages
+  router.get('/payout-percentages', async (req: Request, res: Response) => {
+    try {
+      const supabase = relayerService['supabase']; // Access private property
+      
+      const { data, error } = await supabase.rpc('get_current_payout_percentages');
+      
+      if (error) {
+        throw error;
+      }
+
+      res.json({
+        success: true,
+        payoutPercentages: data,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      logger.error('❌ Error getting payout percentages:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
   // GET /api/pump/leaderboard - Get leaderboard
   router.get('/leaderboard', async (req: Request, res: Response) => {
     try {

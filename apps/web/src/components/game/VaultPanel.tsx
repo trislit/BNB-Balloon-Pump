@@ -16,6 +16,29 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
+  const [payoutPercentages, setPayoutPercentages] = useState<any>(null);
+
+  // Fetch current payout percentages
+  const fetchPayoutPercentages = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_RELAYER_URL || 'http://localhost:3001'}/api/pump/payout-percentages`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setPayoutPercentages(data.payoutPercentages);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch payout percentages:', error);
+    }
+  };
+
+  // Fetch payout percentages on mount and when balance updates
+  useEffect(() => {
+    fetchPayoutPercentages();
+    const interval = setInterval(fetchPayoutPercentages, 5000); // Update every 5 seconds
+    return () => clearInterval(interval);
+  }, [userBalance]);
 
   const handleDeposit = async () => {
     if (!address || !depositAmount || isDepositing) return;
@@ -91,15 +114,31 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
         </div>
       </div>
 
-      {/* Payout Structure Info */}
+      {/* Dynamic Payout Structure Info */}
       <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-lg p-3 mb-4 border border-yellow-500/30">
-        <div className="text-yellow-300 font-semibold text-sm mb-2">🎯 New Payout Structure</div>
-        <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
-          <div>🥇 Winner: <span className="text-yellow-300 font-bold">80%</span></div>
-          <div>🥈 2nd: <span className="text-gray-300 font-bold">10%</span></div>
-          <div>🥉 3rd: <span className="text-orange-300 font-bold">5%</span></div>
-          <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">2.5%</span></div>
-          <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">2.5%</span></div>
+        <div className="text-yellow-300 font-semibold text-sm mb-2">🎯 Dynamic Payout Structure</div>
+        {payoutPercentages ? (
+          <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
+            <div>🥇 Winner: <span className="text-yellow-300 font-bold">{payoutPercentages.winner_pct_display}%</span></div>
+            <div>🥈 2nd: <span className="text-gray-300 font-bold">{payoutPercentages.second_pct_display}%</span></div>
+            <div>🥉 3rd: <span className="text-orange-300 font-bold">{payoutPercentages.third_pct_display}%</span></div>
+            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">{payoutPercentages.dev_pct_display}%</span></div>
+            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">{payoutPercentages.burn_pct_display}%</span></div>
+            <div className="col-span-2 text-center text-xs text-gray-400 mt-1">
+              Pressure: {payoutPercentages.pressure} ({(payoutPercentages.pressure_ratio * 100).toFixed(1)}% of max)
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
+            <div>🥇 Winner: <span className="text-yellow-300 font-bold">50-80%</span></div>
+            <div>🥈 2nd: <span className="text-gray-300 font-bold">5-10%</span></div>
+            <div>🥉 3rd: <span className="text-orange-300 font-bold">2-5%</span></div>
+            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">5-15%</span></div>
+            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">0-28%</span></div>
+          </div>
+        )}
+        <div className="text-xs text-yellow-200 mt-2 p-1 bg-yellow-500/20 rounded">
+          💡 Higher pressure = more to players, lower pressure = more to house
         </div>
       </div>
 

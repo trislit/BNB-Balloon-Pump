@@ -22,6 +22,11 @@ BEGIN
   IF current_round IS NULL THEN
     RETURN json_build_object('success', false, 'error', 'No active round');
   END IF;
+  
+  -- Check if balloon is already popped (shouldn't happen but safety check)
+  IF current_round.status = 'ended' THEN
+    RETURN json_build_object('success', false, 'error', 'Balloon already popped');
+  END IF;
 
   -- Convert pump amount to decimal
   pump_amount_decimal := pump_amount::DECIMAL;
@@ -30,42 +35,110 @@ BEGIN
   new_pressure := COALESCE(current_round.pressure::DECIMAL, 0) + pump_amount_decimal;
   new_pot := COALESCE(current_round.pot::DECIMAL, 0) + (pump_amount_decimal * 0.1);
   
-  -- Simple pop logic - pop at 1000 pressure OR random chance
-  should_pop := new_pressure >= 1000;
-  
-  -- If not popped by threshold, check random chance (5%)
-  IF NOT should_pop THEN
-    should_pop := (random() * 100) < 5;
-  END IF;
+  -- Random pop logic - use multiple random factors for better distribution
+  -- Combine pressure with random chance for more realistic popping
+  DECLARE
+    random_factor DECIMAL;
+    pressure_factor DECIMAL;
+    combined_chance DECIMAL;
+  BEGIN
+    -- Generate random factor (0-1)
+    random_factor := random();
+    
+    -- Pressure factor increases chance as pressure builds (0-1)
+    pressure_factor := LEAST(new_pressure / 1000.0, 1.0);
+    
+    -- Combined chance: base 3% + pressure-based increase
+    combined_chance := 0.03 + (pressure_factor * 0.12); -- 3% to 15%
+    
+    -- Check if balloon should pop
+    should_pop := random_factor < combined_chance;
+    
+    -- If not popped by random chance, check threshold (guaranteed pop at 1000)
+    IF NOT should_pop THEN
+      should_pop := new_pressure >= 1000;
+    END IF;
+  END;
   
   IF should_pop THEN
-    -- Balloon popped! Create new round
-    UPDATE rounds_cache SET
-      status = 'ended',
-      pressure = new_pressure::TEXT,
-      pot = new_pot::TEXT,
-      updated_at = NOW()
-    WHERE round_id = current_round.round_id;
-    
-    -- Create new round automatically
-    INSERT INTO rounds_cache (
-      round_id, status, pressure, pot, last1, last2, last3, created_at, updated_at
-    ) VALUES (
-      (COALESCE(current_round.round_id::INTEGER, 0) + 1)::TEXT,
-      'active', '0', '0', NULL, NULL, NULL, NOW(), NOW()
-    );
-    
-    result := json_build_object(
-      'success', true,
-      'balloon_popped', true,
-      'pressure', new_pressure::TEXT,
-      'pot', new_pot::TEXT,
-      'winner', current_round.last1,
-      'second', current_round.last2,
-      'third', current_round.last3,
-      'new_round_created', true,
-      'new_round_id', (COALESCE(current_round.round_id::INTEGER, 0) + 1)::TEXT
-    );
+    -- Balloon popped! Calculate dynamic payouts based on pressure
+    DECLARE
+      pressure_ratio DECIMAL;
+      winner_pct DECIMAL;
+      second_pct DECIMAL;
+      third_pct DECIMAL;
+      dev_pct DECIMAL;
+      burn_pct DECIMAL;
+      winner_amount DECIMAL;
+      second_amount DECIMAL;
+      third_amount DECIMAL;
+      dev_amount DECIMAL;
+      burn_amount DECIMAL;
+    BEGIN
+      -- Calculate pressure ratio (0.0 to 1.0, where 1.0 = 1000+ pressure)
+      pressure_ratio := LEAST(new_pressure / 1000.0, 1.0);
+      
+      -- Dynamic payout percentages based on pressure
+      -- Early pops (low pressure): More to house (dev/burn)
+      -- Later pops (high pressure): More to players
+      winner_pct := 0.5 + (pressure_ratio * 0.3);  -- 50% to 80%
+      second_pct := 0.05 + (pressure_ratio * 0.05); -- 5% to 10%
+      third_pct := 0.02 + (pressure_ratio * 0.03);  -- 2% to 5%
+      dev_pct := 0.15 - (pressure_ratio * 0.1);     -- 15% to 5%
+      burn_pct := 0.28 - (pressure_ratio * 0.28);   -- 28% to 0%
+      
+      -- Calculate actual amounts
+      winner_amount := new_pot * winner_pct;
+      second_amount := new_pot * second_pct;
+      third_amount := new_pot * third_pct;
+      dev_amount := new_pot * dev_pct;
+      burn_amount := new_pot * burn_pct;
+      
+      -- Update round status
+      UPDATE rounds_cache SET
+        status = 'ended',
+        pressure = new_pressure::TEXT,
+        pot = new_pot::TEXT,
+        updated_at = NOW()
+      WHERE round_id = current_round.round_id;
+      
+      -- Create new round automatically
+      INSERT INTO rounds_cache (
+        round_id, status, pressure, pot, last1, last2, last3, created_at, updated_at
+      ) VALUES (
+        (COALESCE(current_round.round_id::INTEGER, 0) + 1)::TEXT,
+        'active', '0', '0', NULL, NULL, NULL, NOW(), NOW()
+      );
+      
+      result := json_build_object(
+        'success', true,
+        'balloon_popped', true,
+        'pressure', new_pressure::TEXT,
+        'pot', new_pot::TEXT,
+        'winner', current_round.last1,
+        'second', current_round.last2,
+        'third', current_round.last3,
+        'new_round_created', true,
+        'new_round_id', (COALESCE(current_round.round_id::INTEGER, 0) + 1)::TEXT,
+        'pop_reason', CASE 
+          WHEN new_pressure >= 1000 THEN 'threshold_reached'
+          ELSE 'random_pop'
+        END,
+        'payout_structure', json_build_object(
+          'pressure_ratio', pressure_ratio,
+          'winner_pct', winner_pct,
+          'second_pct', second_pct,
+          'third_pct', third_pct,
+          'dev_pct', dev_pct,
+          'burn_pct', burn_pct,
+          'winner_amount', winner_amount,
+          'second_amount', second_amount,
+          'third_amount', third_amount,
+          'dev_amount', dev_amount,
+          'burn_amount', burn_amount
+        )
+      );
+    END;
   ELSE
     -- Normal pump - update round
     UPDATE rounds_cache SET
@@ -105,6 +178,51 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create a function to get game stats
+-- Function to get current payout percentages based on pressure
+CREATE OR REPLACE FUNCTION get_current_payout_percentages() RETURNS JSON AS $$
+DECLARE
+  current_round RECORD;
+  pressure_ratio DECIMAL;
+  winner_pct DECIMAL;
+  second_pct DECIMAL;
+  third_pct DECIMAL;
+  dev_pct DECIMAL;
+  burn_pct DECIMAL;
+BEGIN
+  -- Get current round
+  SELECT * INTO current_round FROM rounds_cache WHERE status = 'active' LIMIT 1;
+  
+  IF current_round IS NULL THEN
+    RETURN json_build_object('error', 'No active round');
+  END IF;
+  
+  -- Calculate pressure ratio (0.0 to 1.0, where 1.0 = 1000+ pressure)
+  pressure_ratio := LEAST(COALESCE(current_round.pressure::DECIMAL, 0) / 1000.0, 1.0);
+  
+  -- Dynamic payout percentages based on pressure
+  winner_pct := 0.5 + (pressure_ratio * 0.3);  -- 50% to 80%
+  second_pct := 0.05 + (pressure_ratio * 0.05); -- 5% to 10%
+  third_pct := 0.02 + (pressure_ratio * 0.03);  -- 2% to 5%
+  dev_pct := 0.15 - (pressure_ratio * 0.1);     -- 15% to 5%
+  burn_pct := 0.28 - (pressure_ratio * 0.28);   -- 28% to 0%
+  
+  RETURN json_build_object(
+    'pressure', current_round.pressure,
+    'pressure_ratio', pressure_ratio,
+    'winner_pct', winner_pct,
+    'second_pct', second_pct,
+    'third_pct', third_pct,
+    'dev_pct', dev_pct,
+    'burn_pct', burn_pct,
+    'winner_pct_display', ROUND(winner_pct * 100, 1),
+    'second_pct_display', ROUND(second_pct * 100, 1),
+    'third_pct_display', ROUND(third_pct * 100, 1),
+    'dev_pct_display', ROUND(dev_pct * 100, 1),
+    'burn_pct_display', ROUND(burn_pct * 100, 1)
+  );
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION get_game_stats() RETURNS JSON AS $$
 DECLARE
   stats JSON;
