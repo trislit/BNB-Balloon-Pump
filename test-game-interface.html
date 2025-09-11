@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎈 Don't Pop the Balloon - Test Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .panel h3 {
+            color: white;
+            margin-top: 0;
+            text-align: center;
+        }
+        .balloon {
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            margin: 20px auto;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        .balloon:hover {
+            transform: scale(1.1);
+        }
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: #8B4513;
+        }
+        .controls {
+            text-align: center;
+        }
+        .user-select {
+            margin: 10px 0;
+        }
+        .user-select select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+        .amount-input {
+            margin: 10px 0;
+        }
+        .amount-input input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            width: 100px;
+        }
+        .pump-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        .pump-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .pump-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #00ff00;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .log-success { background: rgba(0, 255, 0, 0.1); }
+        .log-error { background: rgba(255, 0, 0, 0.1); color: #ff6666; }
+        .log-info { background: rgba(0, 150, 255, 0.1); color: #66b3ff; }
+        .log-pop { background: rgba(255, 165, 0, 0.2); color: #ffaa00; font-weight: bold; }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .test-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .test-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎈 Don't Pop the Balloon - Test Interface</h1>
+        
+        <div class="game-area">
+            <div class="panel">
+                <h3>🎮 Game Controls</h3>
+                <div class="balloon" id="balloon"></div>
+                <div class="controls">
+                    <div class="user-select">
+                        <select id="userSelect">
+                            <option value="0x1111111111111111111111111111111111111111">User 1 (5000 tokens)</option>
+                            <option value="0x2222222222222222222222222222222222222222">User 2 (3000 tokens)</option>
+                            <option value="0x3333333333333333333333333333333333333333">User 3 (2000 tokens)</option>
+                            <option value="0x4444444444444444444444444444444444444444">User 4 (1000 tokens)</option>
+                            <option value="0x5555555555555555555555555555555555555555">User 5 (500 tokens)</option>
+                        </select>
+                    </div>
+                    <div class="amount-input">
+                        <input type="number" id="pumpAmount" value="100" min="1" max="1000" placeholder="Pump amount">
+                    </div>
+                    <button class="pump-btn" id="pumpBtn" onclick="pumpBalloon()">🎈 PUMP BALLOON</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>📊 Game Statistics</h3>
+                <div class="stats" id="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="pressure">0</div>
+                        <div class="stat-label">Pressure</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pot">0</div>
+                        <div class="stat-label">Pot Size</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="popChance">5%</div>
+                        <div class="stat-label">Pop Chance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="vaultBalance">5000</div>
+                        <div class="stat-label">Vault Balance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="runPopChanceTest()">Test Pop Chances</button>
+            <button class="test-btn" onclick="runGameSimulation()">Run Simulation</button>
+            <button class="test-btn" onclick="resetGame()">Reset Game</button>
+            <button class="test-btn" onclick="getGameStats()">Get Stats</button>
+        </div>
+        
+        <div class="panel">
+            <h3>📝 Activity Log</h3>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const supabaseUrl = 'https://uvmfrbiojefvtbfgbcfk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2bWZyYmlvamVmdnRiZmdiY2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyMDM1MDMsImV4cCI6MjA3Mjc3OTUwM30.vOknqYlGvcmYoj2L8TuYQuPc-qZIvgei7YGgHRRRvcM';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let gameState = {
+            pressure: 0,
+            pot: 0,
+            popChance: 5,
+            lastPumper: null
+        };
+
+        // Initialize the interface
+        async function init() {
+            log('🎈 Don\'t Pop the Balloon Test Interface Loaded', 'info');
+            await updateGameState();
+        }
+
+        // Log function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Update game state display
+        function updateGameState() {
+            document.getElementById('pressure').textContent = gameState.pressure;
+            document.getElementById('pot').textContent = gameState.pot;
+            document.getElementById('popChance').textContent = gameState.popChance + '%';
+            
+            // Update balloon size based on pressure
+            const balloon = document.getElementById('balloon');
+            const size = Math.min(100 + (gameState.pressure * 0.5), 200);
+            balloon.style.width = size + 'px';
+            balloon.style.height = (size * 1.2) + 'px';
+        }
+
+        // Pump balloon function
+        async function pumpBalloon() {
+            const userAddress = document.getElementById('userSelect').value;
+            const pumpAmount = document.getElementById('pumpAmount').value;
+            
+            if (!pumpAmount || pumpAmount <= 0) {
+                log('❌ Please enter a valid pump amount', 'error');
+                return;
+            }
+
+            const pumpBtn = document.getElementById('pumpBtn');
+            pumpBtn.disabled = true;
+            pumpBtn.textContent = '⏳ PUMPING...';
+
+            try {
+                log(`🎈 ${userAddress.slice(0,8)}... pumping ${pumpAmount} tokens`, 'info');
+                
+                const { data, error } = await supabase.rpc('manual_pump', {
+                    user_address: userAddress,
+                    pump_amount: pumpAmount
+                });
+
+                if (error) throw error;
+
+                if (data.success) {
+                    gameState.pressure = parseFloat(data.pressure);
+                    gameState.pot = parseFloat(data.pot);
+                    gameState.popChance = parseFloat(data.pop_chance) / 100;
+                    
+                    updateGameState();
+                    
+                    if (data.balloon_popped) {
+                        log(`🎉 BALLOON POPPED! Winner: ${data.winner}`, 'pop');
+                        log(`💰 Winner gets: ${data.winner_amount} tokens`, 'pop');
+                        log(`🥈 Second gets: ${data.second_amount} tokens`, 'pop');
+                        log(`🥉 Third gets: ${data.third_amount} tokens`, 'pop');
+                        log(`👨‍💻 Dev gets: ${data.dev_amount} tokens`, 'pop');
+                        log(`🔥 Burn: ${data.burn_amount} tokens`, 'pop');
+                        
+                        // Animate balloon pop
+                        const balloon = document.getElementById('balloon');
+                        balloon.style.animation = 'none';
+                        setTimeout(() => {
+                            balloon.style.animation = 'shake 0.5s ease-in-out';
+                        }, 100);
+                    } else {
+                        log(`✅ Pump successful! Pressure: ${data.pressure}, Pot: ${data.pot}`, 'success');
+                    }
+                } else {
+                    log(`❌ Pump failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                pumpBtn.disabled = false;
+                pumpBtn.textContent = '🎈 PUMP BALLOON';
+            }
+        }
+
+        // Test pop chances
+        async function runPopChanceTest() {
+            log('🧪 Running pop chance tests...', 'info');
+            
+            try {
+                const { data, error } = await supabase.rpc('test_pop_chances');
+                if (error) throw error;
+
+                log('📊 Pop Chance Test Results:', 'info');
+                data.pop_chance_tests.forEach(test => {
+                    log(`${test.pop_percentage} chance: ${test.actual_pops}/${test.total_tests} pops (${test.actual_rate})`, 'info');
+                });
+            } catch (error) {
+                log(`❌ Pop chance test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Run game simulation
+        async function runGameSimulation() {
+            log('🎮 Running game simulation (3 rounds)...', 'info');
+            
+            try {
+                const { data, error } = await supabase.rpc('test_game_mechanics', { rounds_to_test: 3 });
+                if (error) throw error;
+
+                log(`📊 Simulation Results:`, 'info');
+                log(`   Rounds: ${data.total_rounds}`, 'info');
+                log(`   Pops: ${data.total_pops}`, 'info');
+                log(`   Pop Rate: ${data.pop_rate}`, 'info');
+                log(`   Avg Pressure: ${data.average_pressure}`, 'info');
+                log(`   Avg Pot: ${data.average_pot}`, 'info');
+                
+                data.round_results.forEach((round, index) => {
+                    if (round.balloon_popped) {
+                        log(`   Round ${round.round}: Popped after ${round.pumps_until_pop} pumps, Winner: ${round.winner}`, 'pop');
+                    } else {
+                        log(`   Round ${round.round}: No pop after ${round.pumps_until_pop} pumps`, 'info');
+                    }
+                });
+            } catch (error) {
+                log(`❌ Simulation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Reset game (only if no active round exists)
+        async function resetGame() {
+            log('🔄 Checking if game needs reset...', 'info');
+            
+            try {
+                // Check if there's an active round
+                const { data: activeRound, error: checkError } = await supabase
+                    .from('rounds_cache')
+                    .select('*')
+                    .eq('status', 'active')
+                    .single();
+
+                if (checkError && checkError.code === 'PGRST116') {
+                    // No active round found, create one
+                    log('📝 No active round found, creating new round...', 'info');
+                    
+                    const { error: createError } = await supabase
+                        .from('rounds_cache')
+                        .insert({
+                            round_id: '1',
+                            status: 'active',
+                            pressure: '0',
+                            pot: '0',
+                            pop_chance: 500,
+                            threshold: 1000,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (createError) throw createError;
+                    
+                    gameState = {
+                        pressure: 0,
+                        pot: 0,
+                        popChance: 5,
+                        lastPumper: null
+                    };
+
+                    updateGameState();
+                    log('✅ New round created successfully', 'success');
+                } else if (activeRound) {
+                    log('✅ Active round already exists - game is running!', 'success');
+                    log(`   Round ID: ${activeRound.round_id}, Pressure: ${activeRound.pressure}, Pot: ${activeRound.pot}`);
+                } else {
+                    throw checkError;
+                }
+            } catch (error) {
+                log(`❌ Reset failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Get game stats
+        async function getGameStats() {
+            log('📊 Getting game statistics...', 'info');
+            
+            try {
+                const { data, error } = await supabase.rpc('get_game_stats');
+                if (error) throw error;
+
+                log(`📈 Game Statistics:`, 'info');
+                log(`   Active Rounds: ${data.active_rounds}`, 'info');
+                log(`   Total Rounds: ${data.total_rounds}`, 'info');
+                log(`   Total Payouts: ${data.total_payouts}`, 'info');
+                log(`   Total Pumps: ${data.total_pumps}`, 'info');
+                log(`   Total Users: ${data.total_users}`, 'info');
+                log(`   Total Vault Balance: ${data.total_vault_balance}`, 'info');
+            } catch (error) {
+                log(`❌ Stats failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

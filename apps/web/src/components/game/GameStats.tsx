@@ -41,10 +41,16 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
       icon: gameState?.riskLevel === 'EXTREME' ? '🚨' : gameState?.riskLevel === 'HIGH' ? '🔴' : gameState?.riskLevel === 'MEDIUM' ? '🟡' : '🟢',
     },
     {
-      label: 'Your Balance',
+      label: 'Your Vault',
       value: `${parseFloat(userBalance).toFixed(2)} Tokens`,
       color: 'text-purple-400',
       icon: '🏦',
+    },
+    {
+      label: 'Payout Structure',
+      value: '80/10/5/2.5/2.5',
+      color: 'text-yellow-400',
+      icon: '🎯',
     },
     {
       label: 'Participants',

@@ -386,46 +386,34 @@ export class RelayerService {
         return { success: false, error: 'User not found' };
       }
 
-      // 2. Update game state optimistically
-      const pumpAmount = request.amount.toString();
+      // 2. Check vault balance
+      const vaultBalance = parseFloat(user.test_tokens || '0');
+      const pumpAmount = parseFloat(request.amount.toString());
       
-      // Update rounds cache with new pressure
-      const { data: round, error: roundError } = await this.supabase
-        .from('rounds_cache')
-        .select('*')
-        .eq('round_id', 1)
-        .single();
-
-      if (roundError || !round) {
-        return { success: false, error: 'Round not found' };
+      if (vaultBalance < pumpAmount) {
+        return { success: false, error: 'Insufficient vault balance' };
       }
 
-      const currentPressure = parseFloat(round.pressure || '0');
-      const newPressure = currentPressure + (parseFloat(pumpAmount) / 10); // 1/10th of pump amount adds to pressure
-      const currentPot = parseFloat(round.pot || '0');
-      const newPot = currentPot + (parseFloat(pumpAmount) * 0.1); // 10% goes to pot
+      // 3. Update game state optimistically using the new function
+      const { data: pumpResult, error: pumpError } = await this.supabase
+        .rpc('simulate_pump_hybrid', {
+          user_address: request.userAddress.toLowerCase(),
+          pump_amount: request.amount.toString(),
+          is_test: true
+        });
 
-      // Check if balloon should pop (>100 pressure)
-      const shouldPop = newPressure > 100;
-
-      if (shouldPop) {
-        // Reset round and distribute rewards
-        await this.handleBalloonPop(request.userAddress, newPot);
-      } else {
-        // Update round state
-        await this.supabase
-          .from('rounds_cache')
-          .update({
-            pressure: newPressure.toString(),
-            pot: newPot.toString(),
-            last1: round.last2 || null,
-            last2: round.last3 || null,
-            last3: request.userAddress.toLowerCase()
-          })
-          .eq('round_id', 1);
+      if (pumpError || !pumpResult?.success) {
+        return { success: false, error: pumpResult?.error || 'Pump simulation failed' };
       }
 
-      // 3. Record pump action
+      // 4. Update user vault balance
+      const newBalance = vaultBalance - pumpAmount;
+      await this.supabase
+        .from('profiles')
+        .update({ test_tokens: newBalance.toString() })
+        .eq('evm_address', request.userAddress.toLowerCase());
+
+      // 5. Record pump action
       await this.supabase
         .from('pumps')
         .update({
@@ -434,6 +422,12 @@ export class RelayerService {
         .eq('id', request.id);
 
       logger.info(`✅ Applied optimistic update for ${request.userAddress}: +${pumpAmount} pump`);
+      
+      // Log if balloon popped
+      if (pumpResult.balloon_popped) {
+        logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner}, Amount: ${pumpResult.winner_amount}`);
+      }
+      
       return { success: true };
 
     } catch (error: any) {
@@ -462,31 +456,9 @@ export class RelayerService {
 
   private async handleBalloonPop(winnerAddress: string, potAmount: number): Promise<void> {
     try {
-      // Distribute rewards: 85% to winner, 10% to 2nd, 3% to 3rd, 2% platform
-      const winnerReward = potAmount * 0.85;
-      
-      // Award winner
-      await this.supabase
-        .from('profiles')
-        .update({
-          test_tokens: `CAST(CAST(test_tokens AS DECIMAL) + ${winnerReward} AS TEXT)`
-        })
-        .eq('evm_address', winnerAddress.toLowerCase());
-
-      // Reset round
-      await this.supabase
-        .from('rounds_cache')
-        .update({
-          pressure: '0',
-          pot: '0',
-          last1: null,
-          last2: null,
-          last3: null,
-          status: 'active'
-        })
-        .eq('round_id', 1);
-
-      logger.info(`🎉 Balloon popped! Winner: ${winnerAddress}, Reward: ${winnerReward}`);
+      // This function is now handled by the simulate_pump_hybrid function
+      // which implements the new 80/10/5/2.5/2.5 payout structure
+      logger.info(`🎉 Balloon popped! Winner: ${winnerAddress}, Pot: ${potAmount}`);
     } catch (error) {
       logger.error('❌ Failed to handle balloon pop:', error);
     }

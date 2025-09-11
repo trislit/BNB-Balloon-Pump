@@ -1,6 +1,6 @@
-# 🎈 BNB Balloon Pump Game - Hybrid Architecture
+# 🎈 BNB Balloon Pump Game - Don't Pop the Balloon Edition
 
-A sophisticated balloon pumping game with **hybrid architecture** combining instant Supabase updates with BNB Smart Chain finality.
+A sophisticated balloon pumping game with **hybrid architecture** combining instant Supabase updates with BNB Smart Chain finality, featuring the exciting "Don't Pop the Balloon" mechanics.
 
 ## 🌟 Features
 
@@ -10,6 +10,9 @@ A sophisticated balloon pumping game with **hybrid architecture** combining inst
 - 🎮 **Gasless Gaming** - Users don't pay gas fees
 - 🔐 **MetaMask Auth** - Sign-In With Ethereum (SIWE)
 - 📊 **Live Leaderboard** - Real-time rankings and statistics
+- 🏦 **Vault System** - Deposit tokens to participate
+- 🎲 **Random Popping** - Balloons can pop at any time
+- 💰 **Enhanced Payouts** - 80%/10%/5%/2.5%/2.5% distribution
 
 ## 🏗️ Architecture
 
@@ -77,10 +80,18 @@ Use the provided templates:
 ## 🎮 How to Play
 
 1. **Connect MetaMask** → Sign SIWE message
-2. **Pump Balloon** → Increase pressure and pot size
-3. **Risk vs Reward** → Higher pressure = higher risk of popping
-4. **Win Big** → Last pumper wins 85% of pot when balloon pops
-5. **Real-time** → See all players' actions instantly
+2. **Deposit to Vault** → Add tokens to your personal vault
+3. **Pump Balloon** → Deduct tokens from vault, increase pressure
+4. **Risk vs Reward** → Balloons can pop randomly at any time!
+5. **Win Big** → Last 3 pumpers win: 80%/10%/5% of pot
+6. **Real-time** → See all players' actions instantly
+
+### New Payout Structure
+- 🥇 **Winner (Last Pumper)**: 80% of pot
+- 🥈 **Second to Last**: 10% of pot  
+- 🥉 **Third to Last**: 5% of pot
+- 👨‍💻 **Developer Fee**: 2.5% of pot
+- 🔥 **Token Burn**: 2.5% of pot
 
 ## 🔧 Modes
 

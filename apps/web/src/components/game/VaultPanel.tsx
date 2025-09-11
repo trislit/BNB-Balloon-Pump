@@ -91,6 +91,18 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
         </div>
       </div>
 
+      {/* Payout Structure Info */}
+      <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-lg p-3 mb-4 border border-yellow-500/30">
+        <div className="text-yellow-300 font-semibold text-sm mb-2">🎯 New Payout Structure</div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
+          <div>🥇 Winner: <span className="text-yellow-300 font-bold">80%</span></div>
+          <div>🥈 2nd: <span className="text-gray-300 font-bold">10%</span></div>
+          <div>🥉 3rd: <span className="text-orange-300 font-bold">5%</span></div>
+          <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">2.5%</span></div>
+          <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">2.5%</span></div>
+        </div>
+      </div>
+
       {/* Deposit Section */}
       <div className="mb-4">
         <h4 className="text-white font-semibold mb-2">Deposit Tokens</h4>

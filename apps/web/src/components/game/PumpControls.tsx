@@ -51,8 +51,11 @@ export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-white/80 text-sm">
-        <span>Pump Amount:</span>
-        <span>Balance: {userBalance} Test Tokens</span>
+        <span>Pump Amount (from vault):</span>
+        <span>Vault: {userBalance} Tokens</span>
+      </div>
+      <div className="text-xs text-yellow-300 text-center mb-2">
+        ⚠️ Balloon can pop randomly! Last 3 pumpers win rewards
       </div>
 
       <div className="flex space-x-2">

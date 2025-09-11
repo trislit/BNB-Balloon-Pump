@@ -29,6 +29,7 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
         uint256 pot;             // Total tokens in the round
         uint256 pressure;        // Current pressure (sum of all pump amounts)
         uint256 threshold;       // Pressure threshold to pop balloon
+        uint256 popChance;       // Random chance for balloon to pop (0-10000, 10000 = 100%)
         uint64 openedAt;         // Unix timestamp when round opened
         uint64 poppedAt;         // Unix timestamp when balloon popped (0 if not popped)
         address[3] lastThree;    // Last three pumpers [most recent, second, third]
@@ -116,12 +117,14 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Open a new round with specified threshold
+     * @dev Open a new round with specified threshold and pop chance
      * @param threshold Pressure threshold to pop the balloon
+     * @param popChance Random chance for balloon to pop (0-10000, 10000 = 100%)
      */
-    function openRound(uint256 threshold) external onlyOwner whenNotPaused {
+    function openRound(uint256 threshold, uint256 popChance) external onlyOwner whenNotPaused {
         require(!rounds[currentRoundId].open, "Previous round still open");
         require(threshold > 0, "Threshold must be positive");
+        require(popChance <= 10000, "Pop chance cannot exceed 100%");
 
         currentRoundId++;
 
@@ -130,6 +133,7 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
             pot: 0,
             pressure: 0,
             threshold: threshold,
+            popChance: popChance,
             openedAt: uint64(block.timestamp),
             poppedAt: 0,
             lastThree: [address(0), address(0), address(0)],
@@ -275,8 +279,8 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
 
         emit Pumped(currentRoundId, user, token, spend, round.pressure, round.pot);
 
-        // Check if balloon should pop
-        if (round.pressure >= round.threshold) {
+        // Check if balloon should pop (either by threshold or random chance)
+        if (round.pressure >= round.threshold || _shouldPopBalloon(round)) {
             _popBalloon(token);
         }
     }
@@ -289,7 +293,7 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
         require(rounds[currentRoundId].open, "No active round");
 
         Round storage round = rounds[currentRoundId];
-        if (round.pressure >= round.threshold) {
+        if (round.pressure >= round.threshold || _shouldPopBalloon(round)) {
             _popBalloon(token);
         }
     }
@@ -311,6 +315,27 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
     }
 
     // ============ Internal Functions ============
+
+    /**
+     * @dev Check if balloon should pop based on random chance
+     * @param round Current round
+     * @return True if balloon should pop
+     */
+    function _shouldPopBalloon(Round storage round) internal view returns (bool) {
+        if (round.popChance == 0) return false; // No random popping if chance is 0
+        
+        // Generate pseudo-random number using block data and seed
+        uint256 random = uint256(keccak256(abi.encodePacked(
+            block.timestamp,
+            block.difficulty,
+            blockhash(block.number - 1),
+            seed,
+            round.pressure
+        )));
+        
+        // Return true if random number is within pop chance range
+        return (random % 10000) < round.popChance;
+    }
 
     /**
      * @dev Internal function to pop the balloon
@@ -335,21 +360,18 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Distribute rewards according to the scheme: 50/25/10 to last three, remainder to burn/platform
+     * @dev Distribute rewards according to the new scheme: 80/10/5/2.5/2.5
      * @param token Token address
      * @param totalPot Total pot to distribute
      * @param lastThree Array of last three pumpers
      */
     function _distributeRewards(address token, uint256 totalPot, address[3] memory lastThree) internal {
-        // Calculate payouts
-        uint256 winnerAmount = (totalPot * 50) / 100; // 50%
-        uint256 secondAmount = (totalPot * 25) / 100; // 25%
-        uint256 thirdAmount = (totalPot * 10) / 100;  // 10%
-        uint256 remainder = totalPot - winnerAmount - secondAmount - thirdAmount;
-
-        // Platform fee from remainder (configurable)
-        uint256 platformFee = (remainder * config.feeBps) / 10000;
-        uint256 burnAmount = remainder - platformFee;
+        // Calculate payouts according to new structure
+        uint256 winnerAmount = (totalPot * 8000) / 10000; // 80%
+        uint256 secondAmount = (totalPot * 1000) / 10000; // 10%
+        uint256 thirdAmount = (totalPot * 500) / 10000;   // 5%
+        uint256 devAmount = (totalPot * 250) / 10000;     // 2.5%
+        uint256 burnAmount = (totalPot * 250) / 10000;    // 2.5%
 
         // Distribute to winners
         if (lastThree[0] != address(0) && winnerAmount > 0) {
@@ -362,12 +384,12 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
             vaults[lastThree[2]][token] += thirdAmount;
         }
 
-        // Platform fee
-        if (platformFee > 0) {
-            require(IERC20(token).transfer(config.feeWallet, platformFee), "Platform fee transfer failed");
+        // Developer fee
+        if (devAmount > 0) {
+            require(IERC20(token).transfer(config.feeWallet, devAmount), "Dev fee transfer failed");
         }
 
-        // Burn remainder
+        // Burn tokens
         if (burnAmount > 0) {
             require(IERC20(token).transfer(config.burnWallet, burnAmount), "Burn transfer failed");
         }
@@ -377,7 +399,7 @@ contract BalloonPump is Ownable2Step, ReentrancyGuard, Pausable {
             winnerAmount,
             secondAmount,
             thirdAmount,
-            platformFee,
+            devAmount,
             burnAmount
         );
     }

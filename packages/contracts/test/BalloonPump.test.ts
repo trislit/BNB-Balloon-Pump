@@ -47,8 +47,8 @@ describe("BalloonPump", function () {
       await mockToken.connect(user).approve(balloonPump.address, INITIAL_BALANCE);
     }
 
-    // Open first round
-    await balloonPump.openRound(ethers.utils.parseEther("10000")); // 10000 threshold
+    // Open first round with 5% pop chance
+    await balloonPump.openRound(ethers.utils.parseEther("10000"), 500); // 10000 threshold, 5% pop chance
   });
 
   describe("Deployment", function () {
@@ -232,7 +232,7 @@ describe("BalloonPump", function () {
       const round = await balloonPump.rounds(1);
       expect(round.settled).to.be.true;
 
-      // Check winner received 50% of pot
+      // Check winner received 80% of pot
       const winnerBalance = await balloonPump.vaults(user1.address, mockToken.address);
       expect(winnerBalance).to.be.gt(DEPOSIT_AMOUNT); // Should have received reward
     });
