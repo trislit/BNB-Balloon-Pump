@@ -31,16 +31,21 @@ export function GameContainer() {
       console.log('🎮 Game State:', state);
       console.log('💰 User Balance:', balance);
       
-      // Calculate consistent risk level
-      const pressure = state?.currentPressure || 0;
+      // Calculate consistent risk level - handle both pressure and currentPressure
+      const pressure = state?.pressure || state?.currentPressure || 0;
       const pressurePercentage = (pressure / 1000) * 100;
       const riskLevel = pressurePercentage > 200 ? 'EXTREME' : 
                        pressurePercentage > 150 ? 'VERY HIGH' : 
                        pressurePercentage > 120 ? 'HIGH' : 
                        pressurePercentage > 80 ? 'MEDIUM' : 'LOW';
       
-      // Add calculated risk level to game state
-      const enhancedState = { ...state, riskLevel, pressurePercentage };
+      // Add calculated risk level to game state and normalize pressure field
+      const enhancedState = { 
+        ...state, 
+        currentPressure: pressure, // Ensure currentPressure is always set
+        riskLevel, 
+        pressurePercentage 
+      };
       
       setGameState(enhancedState);
       setUserBalance(balance);
@@ -72,7 +77,7 @@ export function GameContainer() {
     
     try {
       // Calculate 1% of current pressure as pump amount
-      const currentPressure = gameState?.currentPressure || 0;
+      const currentPressure = gameState?.pressure || gameState?.currentPressure || 0;
       const pumpAmount = Math.max(1, Math.floor(currentPressure * 0.01)); // 1% of current pressure, minimum 1
       
       console.log('🎈 Balloon clicked! Pumping 1%:', pumpAmount);
@@ -208,7 +213,7 @@ export function GameContainer() {
               
               <div className="flex justify-center">
                 <Balloon
-                  size={gameState?.pressurePercentage || Math.min(((gameState?.currentPressure || 0) / 1000) * 100, 200)}
+                  size={gameState?.pressurePercentage || Math.min(((gameState?.pressure || gameState?.currentPressure || 0) / 1000) * 100, 200)}
                   isPopped={false} // Balloon is never "popped" in UI - it just pops when it pops
                   riskLevel={gameState?.riskLevel}
                   onClick={handleBalloonClick}

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 interface BalloonProps {
   size: number; // 0-100 percentage
@@ -11,8 +12,27 @@ interface BalloonProps {
 }
 
 export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }: BalloonProps) {
+  const [isPumping, setIsPumping] = useState(false);
+  const [pumpCount, setPumpCount] = useState(0);
+  const [lastSize, setLastSize] = useState(size);
+  
   // Balloon can now grow beyond 100% - up to 200% (2000+ pressure)
   const balloonSize = Math.max(50, Math.min(250, 50 + (size * 1.0)));
+  
+  // Detect when balloon size changes (pump happened)
+  useEffect(() => {
+    if (size > lastSize) {
+      // Balloon was pumped - trigger animation
+      setIsPumping(true);
+      setPumpCount(prev => prev + 1);
+      
+      // Reset pump animation after 1 second
+      setTimeout(() => {
+        setIsPumping(false);
+      }, 1000);
+    }
+    setLastSize(size);
+  }, [size, lastSize]);
   
   // Enhanced color scheme with gradients based on pressure
   const getBalloonColor = () => {
@@ -75,16 +95,71 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
   }
 
   return (
-    <div className="relative">
+    <div className="flex flex-col items-center space-y-4">
+      {/* Bike Pump */}
+      <div className="relative">
+        <motion.div
+          className="flex items-center space-x-4"
+          animate={isPumping ? {
+            x: [0, -5, 0],
+            scale: [1, 1.05, 1]
+          } : {}}
+          transition={{
+            duration: 0.3,
+            ease: "easeInOut"
+          }}
+        >
+          {/* Pump Handle */}
+          <motion.div
+            className="w-8 h-12 bg-gray-600 rounded-lg relative"
+            animate={isPumping ? {
+              scaleY: [1, 0.8, 1]
+            } : {}}
+            transition={{
+              duration: 0.2,
+              ease: "easeInOut"
+            }}
+          >
+            <div className="absolute top-1 left-1 right-1 h-2 bg-gray-400 rounded"></div>
+            <div className="absolute bottom-1 left-1 right-1 h-2 bg-gray-400 rounded"></div>
+          </motion.div>
+          
+          {/* Pump Body */}
+          <div className="w-6 h-16 bg-gray-500 rounded-lg relative">
+            <div className="absolute top-2 left-1 right-1 h-1 bg-gray-300 rounded"></div>
+            <div className="absolute top-4 left-1 right-1 h-1 bg-gray-300 rounded"></div>
+            <div className="absolute top-6 left-1 right-1 h-1 bg-gray-300 rounded"></div>
+            <div className="absolute top-8 left-1 right-1 h-1 bg-gray-300 rounded"></div>
+          </div>
+          
+          {/* Air Hose */}
+          <div className="w-16 h-2 bg-gray-400 rounded-full relative">
+            <motion.div
+              className="absolute inset-0 bg-blue-300 rounded-full"
+              animate={isPumping ? {
+                scaleX: [0, 1, 0]
+              } : {}}
+              transition={{
+                duration: 0.3,
+                ease: "easeInOut"
+              }}
+            />
+          </div>
+        </motion.div>
+      </div>
+      
       {/* Clickable Balloon */}
       <motion.div
         animate={{
           scale: [1, 1.05, 1],
           y: [0, -5, 0],
+          // Add inflation animation when pumping
+          scaleY: isPumping ? [1, 1.1, 0.95, 1] : 1,
+          scaleX: isPumping ? [1, 0.9, 1.05, 1] : 1,
         }}
         transition={{
-          duration: 2,
-          repeat: Infinity,
+          duration: isPumping ? 0.6 : 2,
+          repeat: isPumping ? 0 : Infinity,
           ease: "easeInOut"
         }}
         className={`relative ${onClick && !disabled ? 'cursor-pointer hover:scale-110 transition-transform duration-200' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -152,10 +227,15 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false }
 
       {/* Click indicator */}
       {onClick && !disabled && (
-        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
-          <div className="bg-purple-600/80 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
-            🎈 Click to pump 1%
-          </div>
+        <div className="text-xs text-gray-400 animate-pulse">
+          🎈 Click to pump 1%
+        </div>
+      )}
+      
+      {/* Pump counter */}
+      {pumpCount > 0 && (
+        <div className="text-xs text-blue-400 font-mono">
+          Pumps: {pumpCount}
         </div>
       )}
 
