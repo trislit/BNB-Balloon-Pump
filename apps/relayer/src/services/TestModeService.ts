@@ -382,14 +382,9 @@ export class TestModeService {
   // Get leaderboard
   async getLeaderboard(limit: number = 10): Promise<any[]> {
     try {
+      // Use the new leaderboard function that includes historical data
       const { data, error } = await this.supabase
-        .from('leaderboard')
-        .select(`
-          *,
-          profiles!inner(evm_address, ens_name)
-        `)
-        .order('net_winnings', { ascending: false })
-        .limit(limit);
+        .rpc('get_leaderboard_data', { limit_count: limit });
 
       if (error) throw error;
       return data || [];
