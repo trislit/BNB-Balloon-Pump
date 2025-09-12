@@ -20,6 +20,14 @@ export interface PumpResult {
   duration?: number;
   error?: string;
   pending?: boolean; // Indicates blockchain confirmation pending
+  balloon_popped?: boolean;
+  pressure?: string;
+  pot?: string;
+  winner?: string;
+  winner_amount?: string;
+  winner_payout?: string;
+  last_pumper?: string;
+  pop_chance?: number;
 }
 
 export interface QueueStatus {

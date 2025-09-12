@@ -402,7 +402,7 @@ export class RelayerService {
       
       // Log if balloon popped
       if (pumpResult.balloon_popped) {
-        logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner}, Amount: ${pumpResult.winner_amount}`);
+        logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner || 'Unknown'}, Amount: ${pumpResult.winner_amount || 'Unknown'}`);
       }
       
       return { success: true, pumpResult };

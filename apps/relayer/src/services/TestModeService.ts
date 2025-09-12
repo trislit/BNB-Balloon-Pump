@@ -133,7 +133,7 @@ export class TestModeService {
   async simulatePump(walletAddress: string, pumpAmount: string): Promise<PumpResult> {
     try {
       // Get current game state
-      const { data: gameState, error: gameError } = await this.supabase
+      let { data: gameState, error: gameError } = await this.supabase
         .rpc('get_token_game_status', { 
           token_address: '0xTEST0000000000000000000000000000000000000' 
         });
@@ -250,7 +250,7 @@ export class TestModeService {
           pressure: newPressure,
           pot: newPot,
           winner: walletAddress,
-          winner_payout: winnings,
+          winner_payout: winnings.toString(),
           pop_chance: popChance
         };
       } else {
@@ -296,7 +296,7 @@ export class TestModeService {
           pop_chance: popChance
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Pump simulation error:', error);
       return {
         success: false,
@@ -330,7 +330,7 @@ export class TestModeService {
   // Get game state
   async getGameState(): Promise<any> {
     try {
-      const { data, error } = await this.supabase
+      let { data, error } = await this.supabase
         .rpc('get_token_game_status', { 
           token_address: '0xTEST0000000000000000000000000000000000000' 
         });
