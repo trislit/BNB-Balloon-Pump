@@ -23,11 +23,12 @@ export class TestModeService {
   // Create or get user profile with test tokens
   async getOrCreateUser(walletAddress: string): Promise<any> {
     try {
-      // Check if user exists
+      // Check if user exists in user_balances
       let { data: user, error } = await this.supabase
-        .from('profiles')
+        .from('user_balances')
         .select('*')
-        .eq('evm_address', walletAddress.toLowerCase())
+        .eq('user_address', walletAddress.toLowerCase())
+        .eq('token_address', '0xTEST0000000000000000000000000000000000000')
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -37,625 +38,367 @@ export class TestModeService {
       // Create user if doesn't exist
       if (!user) {
         const { data: newUser, error: createError } = await this.supabase
-          .from('profiles')
+          .from('user_balances')
           .insert([{
-            evm_address: walletAddress.toLowerCase(),
-            test_tokens: '1000' // Starting balance
+            user_address: walletAddress.toLowerCase(),
+            token_address: '0xTEST0000000000000000000000000000000000000',
+            balance: 1000, // Starting balance
+            total_deposited: 1000,
+            total_withdrawn: 0,
+            total_winnings: 0
           }])
           .select()
           .single();
 
         if (createError) throw createError;
         user = newUser;
-
-        logger.info(`✅ Created test user: ${walletAddress} with 1000 test tokens`);
+        logger.info(`Created new user: ${walletAddress} with 1000 test tokens`);
       }
 
       return user;
     } catch (error) {
-      logger.error('❌ Error getting/creating user:', error);
+      logger.error('Error creating/getting user:', error);
       throw error;
     }
   }
 
-  // Simulate deposit (add test tokens to user balance)
+  // Simulate deposit using simple_deposit function
   async simulateDeposit(walletAddress: string, amount: string): Promise<boolean> {
     try {
-      // Get current balance
-      const user = await this.getOrCreateUser(walletAddress);
-      const currentBalance = parseFloat(user.test_tokens || '0');
-      const depositAmount = parseFloat(amount);
-      const newBalance = currentBalance + depositAmount;
+      const { data, error } = await this.supabase
+        .rpc('simple_deposit', {
+          p_user_address: walletAddress.toLowerCase(),
+          p_token_address: '0xTEST0000000000000000000000000000000000000',
+          p_amount: parseFloat(amount)
+        });
 
-      // Update balance
-      const { error } = await this.supabase
-        .from('profiles')
-        .update({ test_tokens: newBalance.toString() })
-        .eq('evm_address', walletAddress.toLowerCase());
-
-      if (error) throw error;
-
-      // Record transaction
-      await this.supabase
-        .from('token_transactions')
-        .insert([{
-          user_id: walletAddress.toLowerCase(),
-          transaction_type: 'deposit',
-          amount: amount
-        }]);
-
-      logger.info(`✅ Simulated deposit: ${walletAddress} +${amount} test tokens`);
-      return true;
-    } catch (error) {
-      logger.error('❌ Error simulating deposit:', error);
-      return false;
-    }
-  }
-
-  // Simulate withdraw (remove test tokens from user balance)
-  async simulateWithdraw(walletAddress: string, amount: string): Promise<boolean> {
-    try {
-      const user = await this.getOrCreateUser(walletAddress);
-      const currentBalance = parseFloat(user.test_tokens || '0');
-      const withdrawAmount = parseFloat(amount);
-
-      if (currentBalance < withdrawAmount) {
-        logger.warn(`❌ Insufficient balance: ${walletAddress} has ${currentBalance}, needs ${withdrawAmount}`);
+      if (error) {
+        logger.error('Deposit simulation failed:', error);
         return false;
       }
 
-      const newBalance = currentBalance - withdrawAmount;
-
-      const { error } = await this.supabase
-        .from('profiles')
-        .update({ test_tokens: newBalance.toString() })
-        .eq('evm_address', walletAddress.toLowerCase());
-
-      if (error) throw error;
-
-      // Record transaction
-      await this.supabase
-        .from('token_transactions')
-        .insert([{
-          user_id: walletAddress.toLowerCase(),
-          transaction_type: 'withdraw',
-          amount: amount
-        }]);
-
-      logger.info(`✅ Simulated withdraw: ${walletAddress} -${amount} test tokens`);
+      logger.info(`Deposit simulated: ${walletAddress} deposited ${amount} test tokens`);
       return true;
     } catch (error) {
-      logger.error('❌ Error simulating withdraw:', error);
+      logger.error('Deposit simulation error:', error);
       return false;
     }
   }
 
-  // Simulate pump action using database functions
-  async simulatePump(walletAddress: string, pumpAmount: string): Promise<PumpResult> {
+  // Simulate withdrawal
+  async simulateWithdraw(walletAddress: string, amount: string): Promise<boolean> {
     try {
-      logger.info(`🎈 Simulating pump: ${walletAddress} pumping ${pumpAmount} tokens`);
+      // Get current balance
+      const { data: balance, error: balanceError } = await this.supabase
+        .rpc('get_user_balance', {
+          user_address: walletAddress.toLowerCase(),
+          token_address: '0xTEST0000000000000000000000000000000000000'
+        });
 
-      // Check user has enough tokens
-      const user = await this.getOrCreateUser(walletAddress);
-      const currentBalance = parseFloat(user.test_tokens || '0');
-      const pumpCost = parseFloat(pumpAmount);
-
-      if (currentBalance < pumpCost) {
-        return {
-          success: false,
-          requestId: `pump_${Date.now()}`,
-          error: 'Insufficient test tokens'
-        };
+      if (balanceError) {
+        logger.error('Error getting balance for withdrawal:', balanceError);
+        return false;
       }
 
-      // Deduct tokens from user
-      const newBalance = currentBalance - pumpCost;
-      await this.supabase
-        .from('profiles')
-        .update({ test_tokens: newBalance.toString() })
-        .eq('evm_address', walletAddress.toLowerCase());
-
-      // Use database function to simulate pump
-      logger.info(`🎮 Calling simulate_pump_working with:`, {
-        user_address: walletAddress.toLowerCase(),
-        pump_amount: pumpAmount
-      });
-
-      let pumpResult;
-      try {
-        const { data, error } = await this.supabase
-          .rpc('simulate_pump_working', {
-            user_address: walletAddress.toLowerCase(),
-            pump_amount: pumpAmount
-          });
-
-        if (error) {
-          logger.error('❌ Database function error:', error);
-          logger.error('❌ Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          
-          // If function doesn't exist, use fallback
-          if (error.code === '42883' || error.code === 'PGRST202') {
-            logger.warn('⚠️ Function simulate_pump_hybrid not found, using fallback');
-            pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
-          } else {
-            throw error;
-          }
-        } else {
-          pumpResult = data;
-        }
-      } catch (error) {
-        logger.error('❌ Exception calling pump function:', error);
-        logger.warn('⚠️ Using fallback pump simulation');
-        pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
+      const withdrawAmount = parseFloat(amount);
+      if (balance.balance < withdrawAmount) {
+        logger.error('Insufficient balance for withdrawal');
+        return false;
       }
 
-      logger.info('🎮 Pump result from database:', pumpResult);
-      
-      if (!pumpResult || pumpResult.length === 0) {
-        logger.warn('⚠️ No result returned from pump function, using fallback');
-        pumpResult = await this.fallbackPumpSimulation(walletAddress, pumpAmount);
+      // Update balance
+      const { error: updateError } = await this.supabase
+        .from('user_balances')
+        .update({
+          balance: balance.balance - withdrawAmount,
+          total_withdrawn: balance.total_withdrawn + withdrawAmount
+        })
+        .eq('user_address', walletAddress.toLowerCase())
+        .eq('token_address', '0xTEST0000000000000000000000000000000000000');
+
+      if (updateError) {
+        logger.error('Withdrawal update failed:', updateError);
+        return false;
       }
 
-      // Record pump transaction
-      await this.supabase
-        .from('token_transactions')
-        .insert([{
-          user_id: walletAddress.toLowerCase(),
-          transaction_type: 'pump',
-          amount: pumpAmount,
-          round_id: 1
-        }]);
-
-      // Update user stats in leaderboard
-      await this.updateLeaderboardStats(walletAddress.toLowerCase(), pumpAmount);
-
-      logger.info(`✅ Pump simulated: ${walletAddress} -${pumpAmount} tokens, new balance: ${newBalance}`);
-
-      // Return the full pump result from the database function
-      const result = {
-        success: true,
-        requestId: `pump_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        transactionHash: `test_tx_${Date.now()}`,
-        blockNumber: Math.floor(Date.now() / 1000),
-        gasUsed: '21000',
-        duration: 100,
-        // Include all the database function results
-        ...pumpResult
-      };
-
-      // Log if balloon popped
-      if (pumpResult.balloon_popped) {
-        logger.info(`🎉 Balloon popped! Winner: ${pumpResult.winner}, Amount: ${pumpResult.winner_amount}`);
-      }
-
-      return result;
-
+      logger.info(`Withdrawal simulated: ${walletAddress} withdrew ${amount} test tokens`);
+      return true;
     } catch (error) {
-      logger.error('❌ Error simulating pump:', error);
-      return {
-        success: false,
-        requestId: `pump_${Date.now()}`,
-        error: (error as Error).message
-      };
+      logger.error('Withdrawal simulation error:', error);
+      return false;
     }
   }
 
-  // Update leaderboard statistics
-  private async updateLeaderboardStats(walletAddress: string, pumpAmount: string): Promise<void> {
+  // Simulate pump using direct database operations
+  async simulatePump(walletAddress: string, pumpAmount: string): Promise<PumpResult> {
     try {
-      const { error } = await this.supabase
-        .from('leaderboard')
-        .upsert({
-          user_id: walletAddress,
-          total_pumps: 1,
-          net_winnings: '0'
-        }, {
-          onConflict: 'user_id'
-        })
-        .select();
+      // Get current game state
+      const { data: gameState, error: gameError } = await this.supabase
+        .rpc('get_token_game_status', { 
+          token_address: '0xTEST0000000000000000000000000000000000000' 
+        });
 
-      if (error) {
-        // If upsert doesn't work, try update
-        await this.supabase
-          .from('leaderboard')
+      if (gameError) {
+        logger.error('Error getting game state:', gameError);
+        return {
+          success: false,
+          requestId: 'error',
+          error: 'Failed to get game state'
+        };
+      }
+
+      // Check user balance
+      const { data: balance, error: balanceError } = await this.supabase
+        .rpc('get_user_balance', {
+          user_address: walletAddress.toLowerCase(),
+          token_address: '0xTEST0000000000000000000000000000000000000'
+        });
+
+      if (balanceError || balance.balance < parseFloat(pumpAmount)) {
+        return {
+          success: false,
+          requestId: 'error',
+          error: 'Insufficient balance'
+        };
+      }
+
+      // Calculate new pressure and pot
+      const currentPressure = gameState.pressure || 0;
+      const currentPot = gameState.pot_amount || 0;
+      const newPressure = currentPressure + parseFloat(pumpAmount);
+      const newPot = currentPot + parseFloat(pumpAmount);
+
+      // Calculate pop chance
+      let popChance = 5; // Base 5% chance
+      if (newPressure > 1000) {
+        popChance = 30; // 30% chance if pressure > 1000
+      }
+
+      // Check if balloon should pop
+      const shouldPop = Math.random() * 100 < popChance;
+
+      if (shouldPop) {
+        // Balloon popped! End the round
+        const { error: endError } = await this.supabase
+          .from('game_rounds')
           .update({
-            total_pumps: 'total_pumps + 1'
+            status: 'ended',
+            pressure: newPressure,
+            pot_amount: newPot,
+            winner_address: walletAddress.toLowerCase(),
+            ended_at: new Date().toISOString()
           })
-          .eq('user_id', walletAddress);
+          .eq('token_address', '0xTEST0000000000000000000000000000000000000')
+          .eq('status', 'active');
+
+        if (endError) {
+          logger.error('Error ending round:', endError);
+        }
+
+        // Award winnings (80% to winner)
+        const winnings = newPot * 0.8;
+        const { error: winningsError } = await this.supabase
+          .from('user_balances')
+          .update({
+            balance: balance.balance - parseFloat(pumpAmount) + winnings,
+            total_winnings: balance.total_winnings + winnings
+          })
+          .eq('user_address', walletAddress.toLowerCase())
+          .eq('token_address', '0xTEST0000000000000000000000000000000000000');
+
+        if (winningsError) {
+          logger.error('Error awarding winnings:', winningsError);
+        }
+
+        // Create new round
+        const { error: newRoundError } = await this.supabase
+          .from('game_rounds')
+          .insert({
+            token_address: '0xTEST0000000000000000000000000000000000000',
+            round_number: (gameState.round_number || 0) + 1,
+            status: 'active',
+            pressure: 0,
+            pot_amount: 0,
+            created_at: new Date().toISOString(),
+            pop_chance: 500
+          });
+
+        if (newRoundError) {
+          logger.error('Error creating new round:', newRoundError);
+        }
+
+        logger.info(`Balloon popped! Winner: ${walletAddress}, Winnings: ${winnings}`);
+
+        return {
+          success: true,
+          requestId: `pump_${Date.now()}`,
+          balloon_popped: true,
+          pressure: newPressure,
+          pot: newPot,
+          winner: walletAddress,
+          winner_payout: winnings,
+          pop_chance: popChance
+        };
+      } else {
+        // Normal pump - update round
+        const { error: updateError } = await this.supabase
+          .from('game_rounds')
+          .update({
+            pressure: newPressure,
+            pot_amount: newPot,
+            winner_address: walletAddress.toLowerCase(),
+            second_address: gameState.winner_address,
+            third_address: gameState.second_address
+          })
+          .eq('token_address', '0xTEST0000000000000000000000000000000000000')
+          .eq('status', 'active');
+
+        if (updateError) {
+          logger.error('Error updating round:', updateError);
+        }
+
+        // Deduct pump amount from user balance
+        const { error: balanceUpdateError } = await this.supabase
+          .from('user_balances')
+          .update({
+            balance: balance.balance - parseFloat(pumpAmount)
+          })
+          .eq('user_address', walletAddress.toLowerCase())
+          .eq('token_address', '0xTEST0000000000000000000000000000000000000');
+
+        if (balanceUpdateError) {
+          logger.error('Error updating balance:', balanceUpdateError);
+        }
+
+        logger.info(`Pump simulated: ${walletAddress} pumped ${pumpAmount}, new pressure: ${newPressure}`);
+
+        return {
+          success: true,
+          requestId: `pump_${Date.now()}`,
+          balloon_popped: false,
+          pressure: newPressure,
+          pot: newPot,
+          last_pumper: walletAddress,
+          pop_chance: popChance
+        };
       }
     } catch (error) {
-      logger.warn('⚠️ Could not update leaderboard stats:', (error as Error).message);
+      logger.error('Pump simulation error:', error);
+      return {
+        success: false,
+        requestId: 'error',
+        error: error.message
+      };
     }
   }
 
   // Get user balance
   async getUserBalance(walletAddress: string): Promise<string> {
     try {
-      const user = await this.getOrCreateUser(walletAddress);
-      return user.test_tokens || '0';
+      const { data, error } = await this.supabase
+        .rpc('get_user_balance', {
+          user_address: walletAddress.toLowerCase(),
+          token_address: '0xTEST0000000000000000000000000000000000000'
+        });
+
+      if (error) {
+        logger.error('Error getting user balance:', error);
+        return '0';
+      }
+
+      return balance.balance.toString();
     } catch (error) {
-      logger.error('❌ Error getting user balance:', error);
+      logger.error('Get balance error:', error);
       return '0';
     }
   }
 
-  // Get current game state
+  // Get game state
   async getGameState(): Promise<any> {
     try {
-      // Use the new function to get current game state
       const { data, error } = await this.supabase
-        .rpc('get_current_game_state');
+        .rpc('get_token_game_status', { 
+          token_address: '0xTEST0000000000000000000000000000000000000' 
+        });
 
       if (error) {
-        logger.error('❌ Error calling get_current_game_state:', error);
-        logger.error('❌ Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // If function doesn't exist, use fallback
-        if (error.code === '42883' || error.code === 'PGRST202') {
-          logger.warn('⚠️ Function get_current_game_state not found, using fallback');
-          return await this.fallbackGetGameState();
-        } else {
-          throw error;
-        }
+        logger.error('Error getting game state:', error);
+        return this.fallbackGetGameState();
       }
 
-      logger.info('🎮 Raw game state from database:', data);
+      // Calculate risk level and pressure percentage
+      const pressure = data.pressure || 0;
+      const pressurePercentage = Math.min((pressure / 1000) * 100, 200); // Cap at 200%
+      
+      let riskLevel = 'LOW';
+      if (pressurePercentage >= 200) riskLevel = 'EXTREME';
+      else if (pressurePercentage >= 150) riskLevel = 'VERY HIGH';
+      else if (pressurePercentage >= 120) riskLevel = 'HIGH';
+      else if (pressurePercentage >= 80) riskLevel = 'MEDIUM';
 
-      if (data && data.length > 0) {
-        const gameState = data[0];
-        return {
-          roundId: gameState.round_id,
-          status: gameState.status,
-          pressure: parseFloat(gameState.pressure || '0'),
-          pot: parseFloat(gameState.pot || '0'),
-          lastPumpers: [gameState.last1, gameState.last2, gameState.last3].filter(addr => addr),
-          participantCount: gameState.participant_count || 0,
-          riskLevel: gameState.risk_level || 'LOW',
-          pressurePercentage: parseFloat(gameState.pressure_percentage || '0')
-        };
-      } else {
-        // Fallback to direct query if function doesn't exist yet
-        const { data: fallbackData, error: fallbackError } = await this.supabase
-          .from('rounds_cache')
-          .select('*')
-          .eq('status', 'active')
-          .order('round_id', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (fallbackError) throw fallbackError;
-
-        return {
-          roundId: fallbackData.round_id,
-          status: fallbackData.status,
-          pressure: parseFloat(fallbackData.pressure || '0'),
-          pot: parseFloat(fallbackData.pot || '0'),
-          lastPumpers: [fallbackData.last1, fallbackData.last2, fallbackData.last3].filter(addr => addr),
-          participantCount: 0,
-          riskLevel: 'LOW',
-          pressurePercentage: parseFloat(fallbackData.pressure || '0')
-        };
-      }
-    } catch (error) {
-      logger.error('❌ Error getting game state:', error);
       return {
-        roundId: 1,
-        status: 'active',
-        pressure: 0,
-        pot: 0,
-        lastPumpers: [],
-        participantCount: 0,
-        riskLevel: 'LOW',
-        pressurePercentage: 0
+        roundId: data.round_number || 1,
+        currentPressure: pressure,
+        pressure: pressure, // For compatibility
+        maxPressure: 1000,
+        potAmount: data.pot_amount?.toString() || '0',
+        pot: data.pot_amount?.toString() || '0', // For compatibility
+        participantCount: data.total_pumps || 0,
+        lastPumpedBy: data.winner_address,
+        status: data.status,
+        lastPumpers: [data.winner_address, data.second_address, data.third_address].filter(Boolean),
+        riskLevel,
+        pressurePercentage
       };
+    } catch (error) {
+      logger.error('Get game state error:', error);
+      return this.fallbackGetGameState();
     }
   }
 
-  // Get user transaction history
-  async getUserTransactions(walletAddress: string, limit: number = 10): Promise<any[]> {
-    try {
-      const { data, error } = await this.supabase
-        .from('token_transactions')
-        .select('*')
-        .eq('user_id', walletAddress.toLowerCase())
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      logger.error('❌ Error getting user transactions:', error);
-      return [];
-    }
+  // Fallback game state
+  private fallbackGetGameState(): any {
+    return {
+      roundId: 1,
+      currentPressure: 0,
+      pressure: 0,
+      maxPressure: 1000,
+      potAmount: '0',
+      pot: '0',
+      participantCount: 0,
+      lastPumpedBy: null,
+      status: 'active',
+      lastPumpers: [],
+      riskLevel: 'LOW',
+      pressurePercentage: 0
+    };
   }
 
   // Get leaderboard
   async getLeaderboard(limit: number = 10): Promise<any[]> {
     try {
-      // Use the new leaderboard function that includes historical data
       const { data, error } = await this.supabase
-        .rpc('get_leaderboard_data', { limit_count: limit });
+        .from('user_balances')
+        .select('user_address, balance, total_winnings, total_deposited')
+        .eq('token_address', '0xTEST0000000000000000000000000000000000000')
+        .order('total_winnings', { ascending: false })
+        .limit(limit);
 
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        logger.error('Error getting leaderboard:', error);
+        return [];
+      }
+
+      return data.map((entry, index) => ({
+        rank: index + 1,
+        user_id: entry.user_address,
+        total_winnings: entry.total_winnings?.toString() || '0',
+        total_deposited: entry.total_deposited?.toString() || '0',
+        balance: entry.balance?.toString() || '0'
+      }));
     } catch (error) {
-      logger.error('❌ Error getting leaderboard:', error);
+      logger.error('Get leaderboard error:', error);
       return [];
-    }
-  }
-
-  // Fallback pump simulation when database function is not available
-  private async fallbackPumpSimulation(walletAddress: string, pumpAmount: string): Promise<any[]> {
-    try {
-      logger.info('🔄 Using fallback pump simulation');
-      logger.info('🔄 Fallback parameters:', { walletAddress, pumpAmount });
-      
-      // Simple fallback: just update the rounds_cache directly
-      const pumpValue = parseFloat(pumpAmount);
-      const pressureIncrease = pumpValue / 8; // Simple 1/8th pressure increase
-      const potContribution = pumpValue; // 100% to pot
-      
-      logger.info('🔄 Calculated values:', { pumpValue, pressureIncrease, potContribution });
-      
-      // Get current round state
-      logger.info('🔄 Querying rounds_cache for round_id = 1');
-      const { data: currentRound, error: roundError } = await this.supabase
-        .from('rounds_cache')
-        .select('*')
-        .eq('round_id', 1)
-        .single();
-
-      logger.info('🔄 Round query result:', { currentRound, roundError });
-
-      if (roundError && roundError.code !== 'PGRST116') {
-        logger.error('🔄 Round query error:', roundError);
-        throw roundError;
-      }
-
-      let currentPressure = 0;
-      let currentPot = 0;
-
-      if (currentRound) {
-        currentPressure = parseFloat(currentRound.pressure || '0');
-        currentPot = parseFloat(currentRound.pot || '0');
-      } else {
-        // Create initial round if it doesn't exist
-        await this.supabase
-          .from('rounds_cache')
-          .insert({
-            round_id: 1,
-            status: 'active',
-            pressure: '0',
-            pot: '0',
-            last1: null,
-            last2: null,
-            last3: null
-          });
-      }
-
-      const newPressure = currentPressure + pressureIncrease;
-      const newPot = currentPot + potContribution;
-
-      // Calculate dynamic pop probability based on pressure
-      // Higher pressure = higher chance of popping
-      const basePopChance = 0.01; // 1% base chance
-      const pressureMultiplier = Math.max(0, (newPressure - 50) / 50); // Increases after 50 pressure
-      const popChance = basePopChance + (pressureMultiplier * 0.15); // Up to 16% chance at 100+ pressure
-      
-      // Generate random number to determine if balloon pops
-      const randomRoll = Math.random();
-      const balloonPopped = randomRoll < popChance;
-      
-      logger.info('🎲 Balloon pop calculation:', {
-        newPressure,
-        pressureMultiplier,
-        popChance: (popChance * 100).toFixed(2) + '%',
-        randomRoll: (randomRoll * 100).toFixed(2) + '%',
-        balloonPopped
-      });
-      
-      let winnerReward = 0;
-
-      if (balloonPopped) {
-        // Calculate winner reward (85% of pot)
-        winnerReward = newPot * 0.85;
-        
-        logger.info('💥 Balloon popped! Awarding winner:', {
-          winner: walletAddress.toLowerCase(),
-          reward: winnerReward,
-          pot: newPot
-        });
-
-        // Award winner tokens - get current balance first
-        const { data: currentUser, error: userError } = await this.supabase
-          .from('profiles')
-          .select('test_tokens')
-          .eq('evm_address', walletAddress.toLowerCase())
-          .single();
-
-        if (userError) {
-          logger.error('🔄 Error getting user balance for reward:', userError);
-        } else {
-          const currentBalance = parseFloat(currentUser.test_tokens || '0');
-          const newBalance = currentBalance + winnerReward;
-          
-          const { error: rewardError } = await this.supabase
-            .from('profiles')
-            .update({
-              test_tokens: newBalance.toString()
-            })
-            .eq('evm_address', walletAddress.toLowerCase());
-
-          if (rewardError) {
-            logger.error('🔄 Reward error:', rewardError);
-          } else {
-            logger.info('🔄 Winner rewarded successfully:', { newBalance });
-          }
-        }
-
-        // Reset the round for next game
-        const { error: resetError } = await this.supabase
-          .from('rounds_cache')
-          .update({
-            pressure: '0',
-            pot: '0',
-            last1: null,
-            last2: null,
-            last3: null,
-            status: 'active'
-          })
-          .eq('round_id', 1);
-
-        if (resetError) {
-          logger.error('🔄 Reset error:', resetError);
-          throw resetError;
-        }
-
-        logger.info('🔄 Game reset for new round');
-
-        // Return popped result
-        return [{
-          success: true,
-          new_pressure: '0',
-          new_pot: '0',
-          balloon_popped: true,
-          winner_reward: winnerReward.toString(),
-          pop_threshold: (popChance * 100).toFixed(2),
-          risk_level: 'LOW'
-        }];
-      } else {
-        // Normal pump - update the round
-        logger.info('🔄 Updating round with:', {
-          newPressure,
-          newPot,
-          last1: walletAddress.toLowerCase(),
-          last2: currentRound?.last1 || null,
-          last3: currentRound?.last2 || null
-        });
-
-        const { error: updateError } = await this.supabase
-          .from('rounds_cache')
-          .update({
-            pressure: newPressure.toString(),
-            pot: newPot.toString(),
-            last3: currentRound?.last2 || null,
-            last2: currentRound?.last1 || null,
-            last1: walletAddress.toLowerCase()
-          })
-          .eq('round_id', 1);
-
-        if (updateError) {
-          logger.error('🔄 Update error:', updateError);
-          throw updateError;
-        }
-
-        logger.info('🔄 Round updated successfully');
-
-        // Return normal result
-        return [{
-          success: true,
-          new_pressure: newPressure.toString(),
-          new_pot: newPot.toString(),
-          balloon_popped: false,
-          winner_reward: '0',
-          pop_threshold: (popChance * 100).toFixed(2),
-          risk_level: newPressure > 90 ? 'EXTREME' : newPressure > 70 ? 'HIGH' : newPressure > 50 ? 'MEDIUM' : 'LOW'
-        }];
-      }
-
-    } catch (error) {
-      logger.error('❌ Fallback pump simulation failed:', error);
-      throw error;
-    }
-  }
-
-  // Fallback game state retrieval when database function is not available
-  private async fallbackGetGameState(): Promise<any> {
-    try {
-      logger.info('🔄 Using fallback game state retrieval');
-      
-      // Get current active round directly from rounds_cache
-      const { data: roundData, error } = await this.supabase
-        .from('rounds_cache')
-        .select('round_id, status, pressure, pot, last1, last2, last3')
-        .eq('status', 'active')
-        .order('round_id', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (!roundData) {
-        // No active round found, return default state
-        return {
-          roundId: 1,
-          status: 'active',
-          pressure: 0,
-          pot: 0,
-          lastPumpers: [],
-          participantCount: 0,
-          riskLevel: 'LOW',
-          pressurePercentage: 0
-        };
-      }
-
-      // Calculate participant count from last pumpers
-      const lastPumpers = [roundData.last1, roundData.last2, roundData.last3].filter(addr => addr);
-      const participantCount = new Set(lastPumpers).size;
-
-      // Calculate risk level
-      const pressure = parseFloat(roundData.pressure || '0');
-      let riskLevel = 'LOW';
-      if (pressure > 90) riskLevel = 'EXTREME';
-      else if (pressure > 70) riskLevel = 'HIGH';
-      else if (pressure > 50) riskLevel = 'MEDIUM';
-
-      // Calculate pressure percentage (assuming max pressure of 100)
-      const pressurePercentage = Math.min(pressure, 100);
-
-      // Calculate pop chance for display
-      const basePopChance = 0.01; // 1% base chance
-      const pressureMultiplier = Math.max(0, (pressure - 50) / 50); // Increases after 50 pressure
-      const popChance = basePopChance + (pressureMultiplier * 0.15); // Up to 16% chance at 100+ pressure
-
-      return {
-        roundId: roundData.round_id,
-        status: roundData.status,
-        pressure: pressure,
-        pot: parseFloat(roundData.pot || '0'),
-        lastPumpers: lastPumpers,
-        participantCount: participantCount,
-        riskLevel: riskLevel,
-        pressurePercentage: pressurePercentage,
-        popChance: (popChance * 100).toFixed(2)
-      };
-
-    } catch (error) {
-      logger.error('❌ Fallback game state retrieval failed:', error);
-      // Return default state on error
-      return {
-        roundId: 1,
-        status: 'active',
-        pressure: 0,
-        pot: 0,
-        lastPumpers: [],
-        participantCount: 0,
-        riskLevel: 'LOW',
-        pressurePercentage: 0,
-        popChance: '1.00'
-      };
     }
   }
 }

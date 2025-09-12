@@ -236,8 +236,8 @@ BEGIN
   SET pressure = new_pressure,
       pot_amount = new_pot,
       total_pumps = total_pumps + 1,
-      third_address = second_address,
-      second_address = winner_address,
+      third_address = current_round.second_address,
+      second_address = current_round.winner_address,
       winner_address = pump_balloon.user_address
   WHERE id = current_round.id;
 
@@ -453,17 +453,17 @@ DECLARE
   result JSON;
 BEGIN
   INSERT INTO user_balances (user_address, token_address, balance, total_deposited)
-  VALUES (user_address, token_address, amount, amount)
+  VALUES (deposit_tokens.user_address, deposit_tokens.token_address, deposit_tokens.amount, deposit_tokens.amount)
   ON CONFLICT (user_address, token_address)
   DO UPDATE SET 
-    balance = balance + amount,
-    total_deposited = total_deposited + amount,
+    balance = user_balances.balance + deposit_tokens.amount,
+    total_deposited = user_balances.total_deposited + deposit_tokens.amount,
     last_updated = NOW();
 
   result := json_build_object(
     'success', true,
     'message', 'Deposit successful',
-    'amount', amount
+    'amount', deposit_tokens.amount
   );
 
   RETURN result;
@@ -495,8 +495,8 @@ BEGIN
 
   -- Update balance
   UPDATE user_balances 
-  SET balance = balance - amount,
-      total_withdrawn = total_withdrawn + amount,
+  SET balance = user_balances.balance - withdraw_tokens.amount,
+      total_withdrawn = user_balances.total_withdrawn + withdraw_tokens.amount,
       last_updated = NOW()
   WHERE user_address = withdraw_tokens.user_address 
     AND token_address = withdraw_tokens.token_address;
@@ -504,7 +504,7 @@ BEGIN
   result := json_build_object(
     'success', true,
     'message', 'Withdrawal successful',
-    'amount', amount
+    'amount', withdraw_tokens.amount
   );
 
   RETURN result;

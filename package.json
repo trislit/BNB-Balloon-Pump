@@ -4,7 +4,7 @@
   "description": "Full technical implementation of BNB Balloon Pump Game with monorepo architecture",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/relayer\" \"npm run dev --workspace=apps/indexer\"",                                                                       
+    "dev": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/relayer\" \"npm run dev --workspace=apps/indexer\"",
     "dev:frontend": "npm run dev --workspace=apps/web",
     "dev:relayer": "npm run dev --workspace=apps/relayer",
     "dev:indexer": "npm run dev --workspace=apps/indexer",
@@ -40,5 +40,8 @@
     "supabase"
   ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4"
+  }
 }

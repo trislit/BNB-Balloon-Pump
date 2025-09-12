@@ -332,49 +332,23 @@ export class RelayerService {
 
   // Test mode methods
   async getUserBalance(walletAddress: string): Promise<string> {
-    if (this.isTestMode) {
-      return await this.testModeService.getUserBalance(walletAddress);
-    }
-    // In production, this would query the smart contract
-    return '0';
+    return await this.testModeService.getUserBalance(walletAddress);
   }
 
   async depositToVault(walletAddress: string, amount: string): Promise<boolean> {
-    if (this.isTestMode) {
-      return await this.testModeService.simulateDeposit(walletAddress, amount);
-    }
-    // In production, this would call smart contract deposit
-    return false;
+    return await this.testModeService.simulateDeposit(walletAddress, amount);
   }
 
   async withdrawFromVault(walletAddress: string, amount: string): Promise<boolean> {
-    if (this.isTestMode) {
-      return await this.testModeService.simulateWithdraw(walletAddress, amount);
-    }
-    // In production, this would call smart contract withdraw
-    return false;
+    return await this.testModeService.simulateWithdraw(walletAddress, amount);
   }
 
   async getGameState(): Promise<any> {
-    if (this.isTestMode) {
-      return await this.testModeService.getGameState();
-    }
-    // In production, this would query smart contract
-    return {
-      roundId: 1,
-      status: 'active',
-      pressure: 0,
-      pot: 0,
-      lastPumpers: []
-    };
+    return await this.testModeService.getGameState();
   }
 
   async getLeaderboard(limit: number = 10): Promise<any[]> {
-    if (this.isTestMode) {
-      return await this.testModeService.getLeaderboard(limit);
-    }
-    // In production, this would query smart contract or additional data
-    return [];
+    return await this.testModeService.getLeaderboard(limit);
   }
 
   // HYBRID MODE: Optimistic Updates
@@ -399,15 +373,14 @@ export class RelayerService {
         return { success: false, error: 'Insufficient vault balance' };
       }
 
-      // 3. Update game state optimistically using the new function
-      const { data: pumpResult, error: pumpError } = await this.supabase
-        .rpc('simulate_pump_working', {
-          user_address: request.userAddress.toLowerCase(),
-          pump_amount: request.amount.toString()
-        });
+      // 3. Use test mode service for pump simulation
+      const pumpResult = await this.testModeService.simulatePump(
+        request.userAddress,
+        request.amount.toString()
+      );
 
-      if (pumpError || !pumpResult?.success) {
-        return { success: false, error: pumpResult?.error || 'Pump simulation failed' };
+      if (!pumpResult.success) {
+        return { success: false, error: pumpResult.error || 'Pump simulation failed' };
       }
 
       // 4. Update user vault balance
