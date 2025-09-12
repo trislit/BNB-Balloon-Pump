@@ -56,7 +56,7 @@ class ApiClient {
       userAddress: request.userAddress,
       amount: request.amount,
       sessionId: request.sessionId || 'test-session',
-      token: request.token || 'TEST-TOKEN'
+      token: request.token || '0xTEST0000000000000000000000000000000000000'
     };
 
     const response = await fetch(`${this.baseUrl}/api/pump`, {

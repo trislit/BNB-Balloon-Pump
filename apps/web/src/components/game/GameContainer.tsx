@@ -113,7 +113,7 @@ export function GameContainer() {
         userAddress: address,
         amount: pumpAmount.toString(),
         sessionId: `balloon_click_${Date.now()}`,
-        token: '0x0000000000000000000000000000000000000000' // Default token
+        token: '0xTEST0000000000000000000000000000000000000' // Test token
       });
       
       if (result.success) {
