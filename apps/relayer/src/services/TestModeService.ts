@@ -138,13 +138,27 @@ export class TestModeService {
           token_address: '0xTEST0000000000000000000000000000000000000' 
         });
 
-      if (gameError) {
-        logger.error('Error getting game state:', gameError);
-        return {
-          success: false,
-          requestId: 'error',
-          error: 'Failed to get game state'
-        };
+      if (gameError || !gameState || gameState.success === false) {
+        logger.warn('No active game found for pump, creating new game...');
+        // Create a new active game round
+        await this.createNewGameRound();
+        
+        // Try again to get the game state
+        const { data: newGameState, error: newGameError } = await this.supabase
+          .rpc('get_token_game_status', { 
+            token_address: '0xTEST0000000000000000000000000000000000000' 
+          });
+
+        if (newGameError || !newGameState) {
+          logger.error('Error getting game state after creating new round:', newGameError);
+          return {
+            success: false,
+            requestId: 'error',
+            error: 'Failed to get game state'
+          };
+        }
+
+        gameState = newGameState;
       }
 
       // Check user balance
@@ -306,7 +320,7 @@ export class TestModeService {
         return '0';
       }
 
-      return balance.balance.toString();
+      return data.balance.toString();
     } catch (error) {
       logger.error('Get balance error:', error);
       return '0';
@@ -321,9 +335,23 @@ export class TestModeService {
           token_address: '0xTEST0000000000000000000000000000000000000' 
         });
 
-      if (error) {
-        logger.error('Error getting game state:', error);
-        return this.fallbackGetGameState();
+      if (error || !data || data.success === false) {
+        logger.warn('No active game found, creating new game...');
+        // Create a new active game round
+        await this.createNewGameRound();
+        
+        // Try again to get the game state
+        const { data: newData, error: newError } = await this.supabase
+          .rpc('get_token_game_status', { 
+            token_address: '0xTEST0000000000000000000000000000000000000' 
+          });
+
+        if (newError || !newData) {
+          logger.error('Error getting game state after creating new round:', newError);
+          return this.fallbackGetGameState();
+        }
+
+        data = newData;
       }
 
       // Calculate risk level and pressure percentage
@@ -353,6 +381,42 @@ export class TestModeService {
     } catch (error) {
       logger.error('Get game state error:', error);
       return this.fallbackGetGameState();
+    }
+  }
+
+  // Create a new game round
+  private async createNewGameRound(): Promise<void> {
+    try {
+      // Get the highest round number for this token
+      const { data: maxRound, error: maxError } = await this.supabase
+        .from('game_rounds')
+        .select('round_number')
+        .eq('token_address', '0xTEST0000000000000000000000000000000000000')
+        .order('round_number', { ascending: false })
+        .limit(1);
+
+      const nextRoundNumber = maxRound && maxRound.length > 0 ? maxRound[0].round_number + 1 : 1;
+
+      // Create new active round
+      const { error: createError } = await this.supabase
+        .from('game_rounds')
+        .insert({
+          token_address: '0xTEST0000000000000000000000000000000000000',
+          round_number: nextRoundNumber,
+          status: 'active',
+          pressure: 0,
+          pot_amount: 0,
+          pop_chance: 500, // 5% base chance
+          created_at: new Date().toISOString()
+        });
+
+      if (createError) {
+        logger.error('Error creating new game round:', createError);
+      } else {
+        logger.info(`Created new game round: ${nextRoundNumber}`);
+      }
+    } catch (error) {
+      logger.error('Error in createNewGameRound:', error);
     }
   }
 

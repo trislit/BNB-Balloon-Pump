@@ -16,30 +16,33 @@ export function Balloon({ size, isPopped, riskLevel, onClick, disabled = false, 
   const [pumpCount, setPumpCount] = useState(0);
   const [lastSize, setLastSize] = useState(size);
   
+  // Ensure size is a valid number and handle edge cases
+  const safeSize = Math.max(0, Math.min(200, Number(size) || 0));
+  
   // Balloon can now grow beyond 100% - up to 200% (2000+ pressure)
-  const balloonSize = Math.max(50, Math.min(250, 50 + (size * 1.0)));
+  const balloonSize = Math.max(50, Math.min(250, 50 + (safeSize * 1.0)));
   
   // Detect when balloon size changes (pump happened)
   useEffect(() => {
-    if (size > lastSize) {
+    if (safeSize > lastSize) {
       // Balloon was pumped - increment counter
       setPumpCount(prev => prev + 1);
     }
-    setLastSize(size);
-  }, [size, lastSize]);
+    setLastSize(safeSize);
+  }, [safeSize, lastSize]);
   
   // Enhanced color scheme with gradients based on pressure
   const getBalloonColor = () => {
     if (isPopped) return '#ef4444';
     
     // Enhanced size-based logic for new pressure ranges
-    if (size > 150) return '#dc2626'; // Red for 150%+ (1500+ pressure)
-    if (size > 120) return '#ea580c'; // Orange for 120%+ (1200+ pressure)
-    if (size > 100) return '#f59e0b'; // Amber for 100%+ (1000+ pressure)
-    if (size > 80) return '#eab308';  // Yellow for 80%+ (800+ pressure)
-    if (size > 60) return '#84cc16';  // Lime for 60%+ (600+ pressure)
-    if (size > 40) return '#22c55e';  // Green for 40%+ (400+ pressure)
-    if (size > 20) return '#10b981';  // Emerald for 20%+ (200+ pressure)
+    if (safeSize > 150) return '#dc2626'; // Red for 150%+ (1500+ pressure)
+    if (safeSize > 120) return '#ea580c'; // Orange for 120%+ (1200+ pressure)
+    if (safeSize > 100) return '#f59e0b'; // Amber for 100%+ (1000+ pressure)
+    if (safeSize > 80) return '#eab308';  // Yellow for 80%+ (800+ pressure)
+    if (safeSize > 60) return '#84cc16';  // Lime for 60%+ (600+ pressure)
+    if (safeSize > 40) return '#22c55e';  // Green for 40%+ (400+ pressure)
+    if (safeSize > 20) return '#10b981';  // Emerald for 20%+ (200+ pressure)
     return '#3b82f6'; // Blue for low pressure
   };
   

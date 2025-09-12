@@ -8,9 +8,18 @@ interface GameStatsProps {
 }
 
 export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
-  const pressure = gameState?.pressure || gameState?.currentPressure || 0;
-  const pot = gameState?.pot || gameState?.potAmount || '0';
-  const pressurePercentage = (pressure / 1000) * 100; // 1000 pressure = 100%
+  // Ensure we have valid data
+  if (!gameState || typeof gameState !== 'object') {
+    return (
+      <div className="glass-card p-6">
+        <div className="text-center text-white/60">Loading game stats...</div>
+      </div>
+    );
+  }
+
+  const pressure = Number(gameState?.pressure || gameState?.currentPressure || 0);
+  const pot = String(gameState?.pot || gameState?.potAmount || '0');
+  const pressurePercentage = Math.min((pressure / 1000) * 100, 200); // Cap at 200%
   
   // Calculate pop chance based on pressure percentage (0-100%)
   const getPopChance = () => {

@@ -32,9 +32,15 @@ export function GameContainer() {
       console.log('🎮 Game State:', state);
       console.log('💰 User Balance:', balance);
       
+      // Ensure we have valid data before processing
+      if (!state || typeof state !== 'object') {
+        console.warn('Invalid game state received:', state);
+        return;
+      }
+      
       // Calculate consistent risk level - handle both pressure and currentPressure
-      const pressure = state?.pressure || state?.currentPressure || 0;
-      const pressurePercentage = (pressure / 1000) * 100;
+      const pressure = Number(state?.pressure || state?.currentPressure || 0);
+      const pressurePercentage = Math.min((pressure / 1000) * 100, 200);
       const riskLevel = pressurePercentage > 200 ? 'EXTREME' : 
                        pressurePercentage > 150 ? 'VERY HIGH' : 
                        pressurePercentage > 120 ? 'HIGH' : 
@@ -44,14 +50,31 @@ export function GameContainer() {
       const enhancedState = { 
         ...state, 
         currentPressure: pressure, // Ensure currentPressure is always set
+        pressure: pressure, // Ensure pressure is always set
         riskLevel, 
-        pressurePercentage 
+        pressurePercentage: Math.round(pressurePercentage * 10) / 10 // Round to 1 decimal
       };
       
       setGameState(enhancedState);
-      setUserBalance(balance);
+      setUserBalance(String(balance || '0'));
     } catch (error) {
       console.error('Failed to fetch game data:', error);
+      // Set fallback state to prevent crashes
+      setGameState({
+        roundId: 1,
+        currentPressure: 0,
+        pressure: 0,
+        maxPressure: 1000,
+        potAmount: '0',
+        pot: '0',
+        participantCount: 0,
+        lastPumpedBy: null,
+        status: 'active',
+        lastPumpers: [],
+        riskLevel: 'LOW',
+        pressurePercentage: 0
+      });
+      setUserBalance('0');
     } finally {
       setIsLoading(false);
     }
@@ -122,6 +145,11 @@ export function GameContainer() {
       return () => clearInterval(interval);
     }
   }, [address, isMounted]);
+
+  // Prevent hydration mismatches by not rendering until mounted
+  if (!isMounted) {
+    return null;
+  }
 
   if (!isMounted || isLoading) {
     return (
