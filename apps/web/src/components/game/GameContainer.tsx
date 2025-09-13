@@ -169,8 +169,8 @@ export function GameContainer() {
     if (isMounted && address) {
       fetchGameData();
       
-      // Refresh every 10 seconds
-      const interval = setInterval(fetchGameData, 10000);
+      // Refresh every 2 minutes for background updates only
+      const interval = setInterval(fetchGameData, 120000);
       
       // Set a timeout to stop loading after 30 seconds
       const timeout = setTimeout(() => {

@@ -42,8 +42,7 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   // Fetch payout percentages on mount and when balance updates
   useEffect(() => {
     fetchPayoutPercentages();
-    const interval = setInterval(fetchPayoutPercentages, 15000); // Update every 15 seconds
-    return () => clearInterval(interval);
+    // No automatic refresh - only update when balance changes or manually
   }, [userBalance]);
 
   const handleDeposit = async () => {
@@ -122,7 +121,15 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
 
       {/* Dynamic Payout Structure Info */}
       <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-lg p-3 mb-4 border border-yellow-500/30">
-        <div className="text-yellow-300 font-semibold text-sm mb-2">🎯 Dynamic Payout Structure</div>
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-yellow-300 font-semibold text-sm">🎯 Dynamic Payout Structure</div>
+          <button 
+            onClick={fetchPayoutPercentages}
+            className="text-xs text-yellow-200 hover:text-yellow-100 underline"
+          >
+            Refresh
+          </button>
+        </div>
         {payoutPercentages ? (
           <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
             <div>🥇 Winner: <span className="text-yellow-300 font-bold">{payoutPercentages.winner}%</span></div>
