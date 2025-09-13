@@ -284,5 +284,72 @@ export const pumpRoutes = (relayerService: RelayerService, queueService: QueueSe
     }
   });
 
+  // Get payout percentages
+  router.get('/payout-percentages', async (req, res) => {
+    try {
+      const gameState = await relayerService.getGameState();
+      
+      // Calculate dynamic payout percentages based on pressure
+      const pressure = Number(gameState?.pressure || 0);
+      const pressurePercentage = Math.min((pressure / 1000) * 100, 200);
+      
+      let payoutPercentages;
+      
+      if (gameState?.is_first_pump) {
+        // First pump: 50/50 split with 5% burn
+        payoutPercentages = {
+          winner: 47.5,
+          second: 0,
+          third: 0,
+          dev: 47.5,
+          burn: 5
+        };
+      } else {
+        // Normal payout: pressure-based distribution
+        if (pressurePercentage <= 50) {
+          // Low pressure: more to house
+          payoutPercentages = {
+            winner: 60,
+            second: 15,
+            third: 10,
+            dev: 10,
+            burn: 5
+          };
+        } else if (pressurePercentage <= 100) {
+          // Medium pressure: balanced
+          payoutPercentages = {
+            winner: 65,
+            second: 15,
+            third: 10,
+            dev: 5,
+            burn: 5
+          };
+        } else {
+          // High pressure: more to players
+          payoutPercentages = {
+            winner: 70,
+            second: 15,
+            third: 10,
+            dev: 0,
+            burn: 5
+          };
+        }
+      }
+      
+      res.json({
+        success: true,
+        payoutPercentages,
+        pressure: pressurePercentage,
+        isFirstPump: gameState?.is_first_pump || false
+      });
+    } catch (error: any) {
+      console.error('Error fetching payout percentages:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Internal server error'
+      });
+    }
+  });
+
   return router;
 };

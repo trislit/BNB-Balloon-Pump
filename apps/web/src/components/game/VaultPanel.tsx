@@ -119,22 +119,25 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
         <div className="text-yellow-300 font-semibold text-sm mb-2">🎯 Dynamic Payout Structure</div>
         {payoutPercentages ? (
           <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
-            <div>🥇 Winner: <span className="text-yellow-300 font-bold">{payoutPercentages.winner_pct_display}%</span></div>
-            <div>🥈 2nd: <span className="text-gray-300 font-bold">{payoutPercentages.second_pct_display}%</span></div>
-            <div>🥉 3rd: <span className="text-orange-300 font-bold">{payoutPercentages.third_pct_display}%</span></div>
-            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">{payoutPercentages.dev_pct_display}%</span></div>
-            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">{payoutPercentages.burn_pct_display}%</span></div>
+            <div>🥇 Winner: <span className="text-yellow-300 font-bold">{payoutPercentages.winner}%</span></div>
+            <div>🥈 2nd: <span className="text-gray-300 font-bold">{payoutPercentages.second}%</span></div>
+            <div>🥉 3rd: <span className="text-orange-300 font-bold">{payoutPercentages.third}%</span></div>
+            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">{payoutPercentages.dev}%</span></div>
+            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">{payoutPercentages.burn}%</span></div>
             <div className="col-span-2 text-center text-xs text-gray-400 mt-1">
-              Pressure: {payoutPercentages.pressure} ({(payoutPercentages.pressure_ratio * 100).toFixed(1)}% of max)
+              Pressure: {payoutPercentages.pressure?.toFixed(1) || '0'}% of max
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
-            <div>🥇 Winner: <span className="text-yellow-300 font-bold">50-80%</span></div>
-            <div>🥈 2nd: <span className="text-gray-300 font-bold">5-10%</span></div>
-            <div>🥉 3rd: <span className="text-orange-300 font-bold">2-5%</span></div>
-            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">5-15%</span></div>
-            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">0-28%</span></div>
+            <div>🥇 Winner: <span className="text-yellow-300 font-bold">Loading...</span></div>
+            <div>🥈 2nd: <span className="text-gray-300 font-bold">Loading...</span></div>
+            <div>🥉 3rd: <span className="text-orange-300 font-bold">Loading...</span></div>
+            <div>👨‍💻 Dev: <span className="text-blue-300 font-bold">Loading...</span></div>
+            <div className="col-span-2 text-center">🔥 Burn: <span className="text-red-300 font-bold">Loading...</span></div>
+            <div className="col-span-2 text-center text-xs text-gray-400 mt-1">
+              Pressure: Loading...
+            </div>
           </div>
         )}
         <div className="text-xs text-yellow-200 mt-2 p-1 bg-yellow-500/20 rounded">
