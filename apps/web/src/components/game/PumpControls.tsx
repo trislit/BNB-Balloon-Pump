@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
+// import { useAccount } from 'wagmi'; // DISABLED AUTH
 import { motion } from 'framer-motion';
 import { apiClient } from '@/lib/apiClient';
 

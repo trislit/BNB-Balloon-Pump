@@ -5,7 +5,8 @@ import { ConnectWallet } from '@/components/auth/ConnectWallet';
 import { useUserStore } from '@/lib/userStore';
 
 export function Header() {
-  const { address, isConnected } = useAccount();
+  // DISABLED AUTH - Show test mode indicator
+  const testAddress = '0x1234567890123456789012345678901234567890';
   const { getNickname } = useUserStore();
 
   return (
@@ -21,12 +22,9 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4">
-          {isConnected && address && (
-            <div className="text-white/80 text-sm">
-              Welcome, {getNickname(address)}
-            </div>
-          )}
-          <ConnectWallet />
+          <div className="text-white/80 text-sm">
+            Test Mode - No Auth Required
+          </div>
         </div>
       </div>
     </header>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+// import { useAccount } from 'wagmi'; // DISABLED AUTH
 import { apiClient } from '@/lib/apiClient';
 
 interface VaultPanelProps {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+// import { useAccount } from 'wagmi'; // DISABLED AUTH
 import { Balloon } from './Balloon';
 import { GameStats } from './GameStats';
 import { Leaderboard } from './Leaderboard';
