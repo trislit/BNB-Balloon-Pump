@@ -22,9 +22,15 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   const fetchPayoutPercentages = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_RELAYER_URL || 'http://localhost:3001'}/api/pump/payout-percentages`);
+      
+      if (response.status === 429) {
+        console.warn('Rate limited, skipping payout percentages fetch');
+        return;
+      }
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.payoutPercentages && !data.payoutPercentages.error) {
           setPayoutPercentages(data.payoutPercentages);
         }
       }
@@ -36,7 +42,7 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   // Fetch payout percentages on mount and when balance updates
   useEffect(() => {
     fetchPayoutPercentages();
-    const interval = setInterval(fetchPayoutPercentages, 5000); // Update every 5 seconds
+    const interval = setInterval(fetchPayoutPercentages, 15000); // Update every 15 seconds
     return () => clearInterval(interval);
   }, [userBalance]);
 
