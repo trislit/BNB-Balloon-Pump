@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-// import { useAccount } from 'wagmi'; // DISABLED AUTH
+import { useAccount } from 'wagmi';
 import { motion } from 'framer-motion';
 import { apiClient } from '@/lib/apiClient';
 
@@ -11,9 +11,7 @@ interface PumpControlsProps {
 }
 
 export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsProps) {
-  // DISABLED AUTH - Use test address for testing
-  const testAddress = '0x1234567890123456789012345678901234567890';
-  const address = testAddress; // Override wallet address with test address
+  const { address } = useAccount();
   const [pumpAmount, setPumpAmount] = useState('100');
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);

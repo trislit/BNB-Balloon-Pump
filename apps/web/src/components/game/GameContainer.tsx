@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { useAccount } from 'wagmi'; // DISABLED AUTH
+import { useAccount } from 'wagmi';
 import { Balloon } from './Balloon';
 import { GameStats } from './GameStats';
 import { Leaderboard } from './Leaderboard';
@@ -10,9 +10,7 @@ import { VaultPanel } from './VaultPanel';
 import { apiClient } from '@/lib/apiClient';
 
 export function GameContainer() {
-  // DISABLED AUTH - Use test address for testing
-  const testAddress = '0x1234567890123456789012345678901234567890';
-  const address = testAddress; // Override wallet address with test address
+  const { address } = useAccount();
   const [gameState, setGameState] = useState<any>(null);
   const [userBalance, setUserBalance] = useState<string>('0');
   const [isLoading, setIsLoading] = useState(true);
