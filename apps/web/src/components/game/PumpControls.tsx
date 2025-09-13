@@ -11,7 +11,9 @@ interface PumpControlsProps {
 }
 
 export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsProps) {
-  const { address } = useAccount();
+  // DISABLED AUTH - Use test address for testing
+  const testAddress = '0x1234567890123456789012345678901234567890';
+  const address = testAddress; // Override wallet address with test address
   const [pumpAmount, setPumpAmount] = useState('100');
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
