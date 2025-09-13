@@ -25,20 +25,8 @@ export function GameContainer() {
     
     try {
       const [state, balance] = await Promise.all([
-        apiClient.getGameState().catch(err => {
-          if (err.status === 429) {
-            console.warn('Rate limited, skipping game state fetch');
-            return null;
-          }
-          throw err;
-        }),
-        apiClient.getUserBalance(address).catch(err => {
-          if (err.status === 429) {
-            console.warn('Rate limited, skipping balance fetch');
-            return '0';
-          }
-          throw err;
-        })
+        apiClient.getGameState(),
+        apiClient.getUserBalance(address)
       ]);
       
       console.log('🎮 Game State:', state);
@@ -47,23 +35,6 @@ export function GameContainer() {
       // Ensure we have valid data before processing
       if (!state || typeof state !== 'object') {
         console.warn('Invalid game state received:', state);
-        // Set fallback state to prevent app from breaking
-        setGameState({
-          roundId: 1,
-          currentPressure: 0,
-          pressure: 0,
-          maxPressure: 1000,
-          potAmount: '0',
-          pot: '0',
-          participantCount: 0,
-          lastPumpedBy: null,
-          timeRemaining: 0,
-          status: 'active',
-          lastPumpers: [],
-          riskLevel: 'LOW',
-          pressurePercentage: 0
-        });
-        setUserBalance(balance || '0');
         return;
       }
       
@@ -169,21 +140,9 @@ export function GameContainer() {
     if (isMounted && address) {
       fetchGameData();
       
-      // Refresh every 2 minutes for background updates only
-      const interval = setInterval(fetchGameData, 120000);
-      
-      // Set a timeout to stop loading after 30 seconds
-      const timeout = setTimeout(() => {
-        if (isLoading) {
-          console.warn('Loading timeout reached, stopping loading state');
-          setIsLoading(false);
-        }
-      }, 30000);
-      
-      return () => {
-        clearInterval(interval);
-        clearTimeout(timeout);
-      };
+      // Refresh every 5 seconds
+      const interval = setInterval(fetchGameData, 5000);
+      return () => clearInterval(interval);
     }
   }, [address, isMounted]);
 
@@ -198,7 +157,6 @@ export function GameContainer() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mb-4"></div>
           <div className="text-white">Loading game...</div>
-          <div className="text-white/60 text-sm mt-2">If this takes too long, try refreshing the page</div>
         </div>
       </div>
     );
