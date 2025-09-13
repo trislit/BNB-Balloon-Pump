@@ -13,11 +13,22 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const { address, isConnected, isConnecting, isDisconnected } = useAccount();
   const [testMode, setTestMode] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   // Handle hydration
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Show options after a short delay to avoid infinite loading
+  useEffect(() => {
+    if (mounted) {
+      const timer = setTimeout(() => {
+        setShowOptions(true);
+      }, 2000); // Show options after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
 
   // Debug logging
   useEffect(() => {
@@ -27,12 +38,19 @@ export function AuthGuard({ children }: AuthGuardProps) {
       isConnecting,
       isDisconnected,
       address: address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'none',
-      testMode
+      testMode,
+      showOptions
     });
-  }, [mounted, isConnected, isConnecting, isDisconnected, address, testMode]);
+  }, [mounted, isConnected, isConnecting, isDisconnected, address, testMode, showOptions]);
+
+  // If wallet is connected, show the game
+  if (isConnected && address) {
+    console.log('✅ Wallet connected, showing game');
+    return <>{children}</>;
+  }
 
   // Show loading only briefly, then show options
-  if (!mounted || isConnecting) {
+  if (!mounted || !showOptions) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -41,12 +59,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
         </div>
       </div>
     );
-  }
-
-  // If wallet is connected, show the game
-  if (isConnected && address) {
-    console.log('✅ Wallet connected, showing game');
-    return <>{children}</>;
   }
 
   // Show wallet connection options
