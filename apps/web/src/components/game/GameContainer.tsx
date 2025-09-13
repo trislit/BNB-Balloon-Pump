@@ -11,6 +11,9 @@ import { apiClient } from '@/lib/apiClient';
 
 export function GameContainer() {
   const { address } = useAccount();
+  // Use test address if no wallet connected (for test mode)
+  const testAddress = '0x1234567890123456789012345678901234567890';
+  const userAddress = address || testAddress;
   const [gameState, setGameState] = useState<any>(null);
   const [userBalance, setUserBalance] = useState<string>('0');
   const [isLoading, setIsLoading] = useState(true);
@@ -20,12 +23,12 @@ export function GameContainer() {
   const [isPumping, setIsPumping] = useState(false);
 
   const fetchGameData = async () => {
-    if (!address) return;
+    if (!userAddress) return;
     
     try {
       const [state, balance] = await Promise.all([
         apiClient.getGameState(),
-        apiClient.getUserBalance(address)
+        apiClient.getUserBalance(userAddress)
       ]);
       
       console.log('🎮 Game State:', state);
@@ -96,7 +99,7 @@ export function GameContainer() {
   };
 
   const handleBalloonClick = async () => {
-    if (!address || gameEnded || isPumping) return;
+    if (!userAddress || gameEnded || isPumping) return;
     
     try {
       // Set pumping state to prevent rapid clicks
@@ -109,7 +112,7 @@ export function GameContainer() {
       console.log('🎈 Balloon clicked! Pumping 1%:', pumpAmount);
       
       const result = await apiClient.pump({
-        userAddress: address,
+        userAddress: userAddress,
         amount: pumpAmount.toString(),
         sessionId: `balloon_click_${Date.now()}`,
         token: '0xTEST0000000000000000000000000000000000000' // Test token

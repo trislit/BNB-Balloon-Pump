@@ -11,6 +11,9 @@ interface VaultPanelProps {
 
 export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelProps) {
   const { address } = useAccount();
+  // Use test address if no wallet connected (for test mode)
+  const testAddress = '0x1234567890123456789012345678901234567890';
+  const userAddress = address || testAddress;
   const [depositAmount, setDepositAmount] = useState('100');
   const [withdrawAmount, setWithdrawAmount] = useState('50');
   const [isDepositing, setIsDepositing] = useState(false);
@@ -41,13 +44,13 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   }, [userBalance]);
 
   const handleDeposit = async () => {
-    if (!address || !depositAmount || isDepositing) return;
+    if (!userAddress || !depositAmount || isDepositing) return;
 
     setIsDepositing(true);
     setLastAction(null);
 
     try {
-      const success = await apiClient.depositToVault(address, depositAmount);
+      const success = await apiClient.depositToVault(userAddress, depositAmount);
       
       if (success) {
         setLastAction('deposit-success');
@@ -65,7 +68,7 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
   };
 
   const handleWithdraw = async () => {
-    if (!address || !withdrawAmount || isWithdrawing) return;
+    if (!userAddress || !withdrawAmount || isWithdrawing) return;
 
     const balanceNum = parseFloat(userBalance);
     const withdrawNum = parseFloat(withdrawAmount);
@@ -80,7 +83,7 @@ export function VaultPanel({ userBalance = '0', onBalanceUpdate }: VaultPanelPro
     setLastAction(null);
 
     try {
-      const success = await apiClient.withdrawFromVault(address, withdrawAmount);
+      const success = await apiClient.withdrawFromVault(userAddress, withdrawAmount);
       
       if (success) {
         setLastAction('withdraw-success');

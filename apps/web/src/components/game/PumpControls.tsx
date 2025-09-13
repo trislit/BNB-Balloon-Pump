@@ -12,19 +12,22 @@ interface PumpControlsProps {
 
 export function PumpControls({ userBalance = '0', onPumpSuccess }: PumpControlsProps) {
   const { address } = useAccount();
+  // Use test address if no wallet connected (for test mode)
+  const testAddress = '0x1234567890123456789012345678901234567890';
+  const userAddress = address || testAddress;
   const [pumpAmount, setPumpAmount] = useState('100');
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const handlePump = async () => {
-    if (!address || !pumpAmount || isLoading) return;
+    if (!userAddress || !pumpAmount || isLoading) return;
 
     setIsLoading(true);
     setLastResult(null);
 
     try {
       const result = await apiClient.pump({
-        userAddress: address,
+        userAddress: userAddress,
         amount: pumpAmount,
       });
 
