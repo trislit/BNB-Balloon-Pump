@@ -19,7 +19,9 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
 
   const pressure = Number(gameState?.pressure || gameState?.currentPressure || 0);
   const pot = String(gameState?.pot || gameState?.potAmount || '0');
-  const pressurePercentage = Math.min((pressure / 1000) * 100, 200); // Cap at 200%
+  
+  // Use pressurePercentage from API if available, otherwise calculate it
+  const pressurePercentage = gameState?.pressurePercentage || Math.min((pressure / 1000) * 100, 200);
   
   // Calculate pop chance based on pressure percentage (0-100%)
   const getPopChance = () => {
@@ -36,14 +38,14 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
   const stats = [
     {
       label: 'Round Status',
-      value: 'Active',
-      color: 'text-green-400',
-      icon: '🎈',
+      value: gameState?.is_first_pump ? 'First Pump!' : 'Active',
+      color: gameState?.is_first_pump ? 'text-orange-400' : 'text-green-400',
+      icon: gameState?.is_first_pump ? '🎯' : '🎈',
     },
     {
       label: 'Pressure',
-      value: `${pressure.toFixed(1)} (${(gameState?.pressurePercentage || pressurePercentage).toFixed(1)}%)`,
-      color: (gameState?.pressurePercentage || pressurePercentage) > 100 ? 'text-red-400' : (gameState?.pressurePercentage || pressurePercentage) > 80 ? 'text-orange-400' : 'text-blue-400',
+      value: `${pressure.toFixed(1)} (${pressurePercentage.toFixed(1)}%)`,
+      color: pressurePercentage > 100 ? 'text-red-400' : pressurePercentage > 80 ? 'text-orange-400' : 'text-blue-400',
       icon: '⚡',
     },
     {
@@ -57,6 +59,19 @@ export function GameStats({ gameState, userBalance = '0' }: GameStatsProps) {
       value: `${parseFloat(pot).toFixed(2)} Tokens`,
       color: 'text-yellow-400',
       icon: '💰',
+    },
+    {
+      label: 'Total Burned',
+      value: `${parseFloat(gameState?.total_burned || '0').toFixed(2)} Tokens`,
+      color: 'text-red-400',
+      icon: '🔥',
+      subtitle: '5% of final pot burned'
+    },
+    {
+      label: 'Pump Count',
+      value: `${gameState?.pump_count || 0}`,
+      color: 'text-blue-400',
+      icon: '🎈',
     },
     {
       label: 'Risk Level',

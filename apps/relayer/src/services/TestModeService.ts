@@ -327,31 +327,43 @@ export class TestModeService {
     }
   }
 
-  // Get game state
+  // Get game state using enhanced mechanics
   async getGameState(): Promise<any> {
     try {
+      // Try enhanced game state first
       let { data, error } = await this.supabase
-        .rpc('get_token_game_status', { 
+        .rpc('get_enhanced_game_state', { 
           token_address: '0xTEST0000000000000000000000000000000000000' 
         });
 
       if (error || !data || data.success === false) {
-        logger.warn('No active game found, creating new game...');
-        // Create a new active game round
-        await this.createNewGameRound();
-        
-        // Try again to get the game state
-        const { data: newData, error: newError } = await this.supabase
+        // Fallback to original method
+        logger.warn('Enhanced game state not available, using fallback...');
+        let { data: fallbackData, error: fallbackError } = await this.supabase
           .rpc('get_token_game_status', { 
             token_address: '0xTEST0000000000000000000000000000000000000' 
           });
 
-        if (newError || !newData) {
-          logger.error('Error getting game state after creating new round:', newError);
-          return this.fallbackGetGameState();
-        }
+        if (fallbackError || !fallbackData || fallbackData.success === false) {
+          logger.warn('No active game found, creating new game...');
+          // Create a new active game round
+          await this.createNewGameRound();
+          
+          // Try again to get the game state
+          const { data: newData, error: newError } = await this.supabase
+            .rpc('get_token_game_status', { 
+              token_address: '0xTEST0000000000000000000000000000000000000' 
+            });
 
-        data = newData;
+          if (newError || !newData) {
+            logger.error('Error getting game state after creating new round:', newError);
+            return this.fallbackGetGameState();
+          }
+
+          data = newData;
+        } else {
+          data = fallbackData;
+        }
       }
 
       // Calculate risk level and pressure percentage
