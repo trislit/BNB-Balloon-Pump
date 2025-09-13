@@ -15,4 +15,5 @@ export const config = createConfig({
     [bsc.id]: http(),
     [bscTestnet.id]: http(),
   },
+  ssr: true, // Enable SSR support
 });
